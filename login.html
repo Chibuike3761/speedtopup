@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Login - NaijaFast Data</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css"/>
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('naijafast_theme') || 'light');</script>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="container">
+    <div class="logo">NaijaFast <span style="color:#00d4aa">Data</span></div>
+    <div class="nav-links">
+      <button id="lang-toggle-btn" class="lang-toggle-btn" onclick="naijafastToggleLanguage()">🇳🇬 Pidgin</button>
+      <button id="theme-toggle-btn" class="theme-toggle-btn" onclick="naijafastToggleTheme()">🌙</button>
+    </div>
+  </div>
+</nav>
+
+<div class="auth-page">
+  <div class="auth-card">
+    <h2 data-i18n="login.title">Login to NaijaFast</h2>
+
+    <input type="email" id="login-email" placeholder="Email Address" data-i18n-placeholder="auth.emailPlaceholder" class="modal-input">
+
+    <div class="input-wrap">
+      <input type="password" id="login-password" placeholder="Password" data-i18n-placeholder="auth.passwordPlaceholder" class="modal-input">
+      <i id="login-password-toggle" onclick="togglePassword('login-password')" class="fas fa-eye toggle-eye"></i>
+    </div>
+
+    <button onclick="performLogin()" class="btn btn-primary btn-block" style="margin-top:10px;" data-i18n="login.btn">Login</button>
+
+    <p class="switch-link"><span data-i18n="login.noaccount">Don't have an account?</span> <a href="register.html" data-i18n="login.registerhere">Register here</a></p>
+    <a href="index.html" class="back-link">&larr; <span data-i18n="back.home">Back to Homepage</span></a>
+  </div>
+</div>
+
+<script src="js/map.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/support-widget.js"></script>
+</body>
+</html>

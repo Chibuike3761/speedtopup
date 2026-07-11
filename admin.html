@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('naijafast_theme') || 'light');</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Dashboard - NaijaFast Data</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="container">
+    <div class="logo">NaijaFast <span style="color:#00d4aa">Data</span> <span style="color:#fbbf24; font-size:0.8rem;">Admin</span></div>
+    <div class="nav-links">
+      <a href="services.html">Services</a>
+      <button class="nav-btn-logout" onclick="logout()">Logout</button>
+      <button id="theme-toggle-btn" class="theme-toggle-btn" onclick="naijafastToggleTheme()">🌙</button>
+    </div>
+  </div>
+</nav>
+
+<main class="container" style="padding-top:2rem; padding-bottom:3rem;">
+
+  <div id="admin-guard-message" style="display:none; text-align:center; padding:3rem 1rem;">
+    <i class="fas fa-lock" style="font-size:2rem; color:var(--gray); margin-bottom:1rem;"></i>
+    <h2>Admin access required</h2>
+    <p style="color:var(--gray);">You don't have permission to view this page.</p>
+    <a href="services.html" class="btn btn-primary" style="margin-top:1rem; display:inline-block;">Back to Services</a>
+  </div>
+
+  <div id="admin-content" style="display:none;">
+    <h1 style="margin-bottom:0.3rem;">Admin Dashboard</h1>
+    <p style="color:var(--gray); margin-bottom:1.5rem;">A live snapshot of users, revenue, and transactions.</p>
+
+    <!-- ---------- OVERVIEW STAT CARDS ---------- -->
+    <div class="admin-stat-grid" id="admin-stat-grid">
+      <div class="admin-stat-card"><span class="admin-stat-label">Total Users</span><span class="admin-stat-value" id="stat-total-users">-</span></div>
+      <div class="admin-stat-card"><span class="admin-stat-label">Verified Users</span><span class="admin-stat-value" id="stat-verified-users">-</span></div>
+      <div class="admin-stat-card"><span class="admin-stat-label">Wallet Balances (Liability)</span><span class="admin-stat-value" id="stat-wallet-balance">-</span></div>
+      <div class="admin-stat-card highlight"><span class="admin-stat-label">Revenue (All-Time)</span><span class="admin-stat-value" id="stat-revenue-total">-</span></div>
+      <div class="admin-stat-card highlight"><span class="admin-stat-label">Revenue (Today)</span><span class="admin-stat-value" id="stat-revenue-today">-</span></div>
+      <div class="admin-stat-card"><span class="admin-stat-label">Wallet Funded (All-Time)</span><span class="admin-stat-value" id="stat-wallet-funded">-</span></div>
+      <div class="admin-stat-card"><span class="admin-stat-label">Loyalty Points Outstanding</span><span class="admin-stat-value" id="stat-loyalty-outstanding">-</span></div>
+      <div class="admin-stat-card"><span class="admin-stat-label">Loyalty Cashback Redeemed</span><span class="admin-stat-value" id="stat-loyalty-redeemed">-</span></div>
+      <div class="admin-stat-card"><span class="admin-stat-label">Speedtest Discount Cost</span><span class="admin-stat-value" id="stat-discount-cost">-</span></div>
+    </div>
+
+    <!-- ---------- REVENUE BY CATEGORY + FUNDING BY PROVIDER ---------- -->
+    <div class="admin-two-col">
+      <div class="admin-panel">
+        <h3>Revenue by Service</h3>
+        <div id="revenue-by-category" class="admin-bar-list"><p class="admin-loading">Loading...</p></div>
+      </div>
+      <div class="admin-panel">
+        <h3>Wallet Funding by Method</h3>
+        <div id="funding-by-provider" class="admin-bar-list"><p class="admin-loading">Loading...</p></div>
+        <h3 style="margin-top:1.4rem;">Transactions by Status</h3>
+        <div id="txn-by-status" class="admin-bar-list"><p class="admin-loading">Loading...</p></div>
+        <h3 style="margin-top:1.4rem;">Referrals</h3>
+        <p style="color:var(--gray); font-size:0.9rem;"><span id="referral-total">0</span> total invites, <span id="referral-completed">0</span> completed (earned the referrer bonus)</p>
+      </div>
+    </div>
+
+    <!-- ---------- USERS TABLE ---------- -->
+    <div class="admin-panel" style="margin-top:2rem;">
+      <div class="admin-panel-header">
+        <h3>Users</h3>
+        <input type="text" id="user-search" class="modal-input admin-search-input" placeholder="Search by email or phone...">
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Email</th><th>Phone</th><th>Verified</th><th>Balance</th><th>Discount</th><th>Loyalty Pts</th><th>Joined</th>
+            </tr>
+          </thead>
+          <tbody id="users-table-body">
+            <tr><td colspan="7" class="admin-loading">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="admin-pagination" id="users-pagination"></div>
+    </div>
+
+    <!-- ---------- TRANSACTIONS TABLE ---------- -->
+    <div class="admin-panel" style="margin-top:2rem;">
+      <div class="admin-panel-header">
+        <h3>Transactions</h3>
+        <input type="text" id="txn-search" class="modal-input admin-search-input" placeholder="Search by reference...">
+      </div>
+      <div class="admin-filter-row">
+        <select id="txn-filter-category" class="modal-input">
+          <option value="">All categories</option>
+          <option value="airtime">Airtime</option>
+          <option value="data">Data</option>
+          <option value="tv">TV</option>
+          <option value="electricity">Electricity</option>
+          <option value="water">Water</option>
+          <option value="waec">WAEC</option>
+          <option value="neco">NECO</option>
+          <option value="wallet-funding">Wallet Funding</option>
+          <option value="speedtest-bonus">Speedtest Bonus</option>
+          <option value="referral-bonus">Referral Bonus</option>
+          <option value="loyalty-redemption">Loyalty Redemption</option>
+        </select>
+        <select id="txn-filter-status" class="modal-input">
+          <option value="">All statuses</option>
+          <option value="pending">Pending</option>
+          <option value="success">Success</option>
+          <option value="failed">Failed</option>
+        </select>
+        <select id="txn-filter-provider" class="modal-input">
+          <option value="">All providers</option>
+          <option value="paystack">Paystack</option>
+          <option value="crypto">Crypto</option>
+        </select>
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>User</th><th>Category</th><th>Amount</th><th>Status</th><th>Provider</th><th>Reference</th><th>Date</th>
+            </tr>
+          </thead>
+          <tbody id="txn-table-body">
+            <tr><td colspan="7" class="admin-loading">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="admin-pagination" id="txn-pagination"></div>
+    </div>
+
+  </div>
+</main>
+
+<script src="js/map.js"></script>
+<script src="js/admin.js"></script>
+<script src="js/theme.js"></script>
+</body>
+</html>

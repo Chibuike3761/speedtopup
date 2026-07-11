@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('naijafast_theme') || 'light');</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>NaijaFast Data - Cheapest & Smartest</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav class="navbar">
+  <div class="container">
+    <div class="logo">NaijaFast <span style="color:#00d4aa">Data</span></div>
+    <div class="nav-links">
+      <a href="index.html" data-i18n="nav.home">Home</a>
+      <a href="#" onclick="goToServices()" data-i18n="nav.services">Services</a>
+      <a href="#map-section" data-i18n="nav.speedmap">Speed Map</a>
+      <a href="#" onclick="showWallet()" data-i18n="nav.wallet">Wallet</a>
+      <a href="login.html" id="nav-login" data-i18n="nav.login">Login</a>
+      <a href="register.html" id="nav-register" data-i18n="nav.register">Register</a>
+      <span id="nav-logout-wrap" style="display:none; align-items:center; gap:0.8rem;">
+        <span class="wallet-badge">Balance: ₦<span id="wallet-balance">0</span></span>
+        <span class="wallet-badge" id="discount-badge" style="display:none;">🎁 <span id="discount-badge-text">2% off first order</span></span>
+        <button class="nav-btn-logout" onclick="logout()" data-i18n="nav.logout">Logout</button>
+      </span>
+      <button id="lang-toggle-btn" class="lang-toggle-btn" onclick="naijafastToggleLanguage()">🇳🇬 Pidgin</button>
+      <button id="theme-toggle-btn" class="theme-toggle-btn" onclick="naijafastToggleTheme()">🌙</button>
+    </div>
+  </div>
+</nav>
+
+<main>
+  <!-- Hero -->
+  <section class="hero">
+    <div class="container">
+      <h1><span data-i18n="hero.title">Cheapest Data in Nigeria</span><br><span class="highlight" data-i18n="hero.price">₦225 per 1GB (MTN SME)</span></h1>
+      <p data-i18n="hero.sub">Instant Delivery • Crypto Supported • Real-Time Speed Map</p>
+      <div class="hero-buttons">
+        <a href="#" onclick="buyData()" class="btn btn-primary" data-i18n="hero.buy">Buy Data Now</a>
+        <a href="#map" class="btn btn-outline" data-i18n="hero.checkspeed">Check Speed Map</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="container features">
+    <div class="feature-card">
+      <i class="fas fa-bolt"></i>
+      <h3 data-i18n="feat1.title">Instant Delivery</h3>
+      <p data-i18n="feat1.desc">Data delivered in under 5 seconds, 24/7</p>
+    </div>
+    <div class="feature-card">
+      <i class="fab fa-bitcoin"></i>
+      <h3 data-i18n="feat2.title">Crypto Payments</h3>
+      <p data-i18n="feat2.desc">USDT, BTC, BNB — no bank stress</p>
+    </div>
+    <div class="feature-card">
+      <i class="fas fa-globe-africa"></i>
+      <h3 data-i18n="feat3.title">Diaspora Friendly</h3>
+      <p data-i18n="feat3.desc">Send data to family from anywhere</p>
+    </div>
+    <div class="feature-card">
+      <i class="fas fa-user-graduate"></i>
+      <h3 data-i18n="feat4.title">Student Discount</h3>
+      <p data-i18n="feat4.desc">15% off with .edu.ng or NIN verification</p>
+    </div>
+  </section>
+
+  <!-- Speed Map -->
+  <section class="container map-section" id="map-section">
+    <div class="section-header">
+      <h2 data-i18n="map.title">NaijaSpeed Live Map</h2>
+      <p data-i18n="map.sub">Real-time speeds reported by users across Nigeria</p>
+    </div>
+    <div id="map"></div>
+
+    <div class="speedtest-controls">
+      <select id="speedtest-network" class="modal-input" style="max-width:220px; display:inline-block;">
+        <option value="" data-i18n="map.selectPlaceholder">Which network are you on? (optional)</option>
+        <option value="mtn">MTN</option>
+        <option value="glo">Glo</option>
+        <option value="airtel">Airtel</option>
+        <option value="etisalat">9mobile</option>
+      </select>
+      <button onclick="runSpeedTest()" class="btn btn-primary" id="speed-test-btn">
+        <i class="fas fa-tachometer-alt"></i> <span data-i18n="map.testbtn">Test My Speed &amp; Get 2% Off Your First Order</span>
+      </button>
+    </div>
+
+    <div class="map-legend">
+      <span><i class="legend-dot" style="background:#ffcc00"></i> MTN</span>
+      <span><i class="legend-dot" style="background:#00a859"></i> Glo</span>
+      <span><i class="legend-dot" style="background:#ed1c24"></i> Airtel</span>
+      <span><i class="legend-dot" style="background:#8b5cf6"></i> 9mobile</span>
+      <span><i class="legend-dot" style="background:#94a3b8"></i> <span data-i18n="map.legend.unspecified">Network not specified</span></span>
+    </div>
+  </section>
+
+  <!-- Best Network Near Me -->
+  <section class="container best-network-section">
+    <div class="best-network-card">
+      <h3><i class="fas fa-signal"></i> <span data-i18n="bestnetwork.title">Best Network Near You</span></h3>
+      <p class="best-network-sub" data-i18n="bestnetwork.sub">Ranked from real speed tests recorded near your location in the last 30 days.</p>
+      <button onclick="findBestNetwork()" class="btn btn-primary" id="best-network-btn">
+        <i class="fas fa-map-marker-alt"></i> <span data-i18n="bestnetwork.btn">Find Best Network Near Me</span>
+      </button>
+      <div id="best-network-results"></div>
+    </div>
+  </section>
+
+  <!-- Pricing -->
+  <section class="prices">
+    <div class="container">
+      <h2 data-i18n="pricing.title">Today's Live Prices</h2>
+      <div class="price-grid" id="price-grid"></div>
+    </div>
+  </section>
+
+  <!-- Status -->
+  <section class="status-section">
+    <div class="container">
+      <div id="auth-status"></div>
+      <button onclick="buyData()" class="btn btn-primary">
+        <i class="fas fa-bolt"></i> <span data-i18n="status.buy">Buy Data Now</span>
+      </button>
+    </div>
+  </section>
+</main>
+
+<!-- Footer -->
+<footer>
+  <div class="container">
+    <p data-i18n="footer.copy">&copy; 2026 NaijaFast Data — Cheapest. Fastest. Smartest.</p>
+    <p data-i18n="footer.love">Made with ❤️ for Nigeria</p>
+  </div>
+</footer>
+
+<!-- Buy Data Modal -->
+<div id="buyDataModal" class="modal-overlay">
+  <div class="modal-box">
+    <h3 data-i18n="modal.title">Buy Data</h3>
+    <select id="modal-network" class="modal-input">
+      <option value="" data-i18n="modal.selectNetwork">Select Network</option>
+      <option value="MTN">MTN SME</option>
+      <option value="AIRTEL">Airtel CG</option>
+      <option value="GLO">Glo</option>
+      <option value="9MOBILE">9mobile</option>
+    </select>
+    <input type="tel" id="modal-phone" placeholder="Phone Number (08123456789)" data-i18n-placeholder="modal.phonePlaceholder" class="modal-input">
+    <input type="number" id="modal-amount" placeholder="Amount in GB" data-i18n-placeholder="modal.amountPlaceholder" class="modal-input" min="1">
+    <button onclick="submitBuyData(this)" class="btn btn-primary btn-block" style="margin-top:10px;" data-i18n="modal.buyNow">Buy Now</button>
+    <button onclick="closeBuyModal()" class="btn btn-secondary btn-block" style="margin-top:10px;" data-i18n="modal.cancel">Cancel</button>
+  </div>
+</div>
+
+<script>
+  // Simple wallet quick-view (full page can be added later)
+  function showWallet() {
+    if (!localStorage.getItem('token')) {
+      alert('Please login first');
+      window.location.href = 'login.html';
+      return;
+    }
+    alert('Wallet balance: ₦' + (document.getElementById('wallet-balance')?.textContent || '0'));
+  }
+</script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/map.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/support-widget.js"></script>
+</body>
+</html>

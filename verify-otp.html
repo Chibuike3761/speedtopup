@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('naijafast_theme') || 'light');</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Verify Phone - NaijaFast Data</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="container">
+    <div class="logo">NaijaFast <span style="color:#00d4aa">Data</span></div>
+    <div class="nav-links">
+      <button id="lang-toggle-btn" class="lang-toggle-btn" onclick="naijafastToggleLanguage()">🇳🇬 Pidgin</button>
+      <button id="theme-toggle-btn" class="theme-toggle-btn" onclick="naijafastToggleTheme()">🌙</button>
+    </div>
+  </div>
+</nav>
+
+<div class="auth-page">
+  <div class="auth-card">
+    <h2 data-i18n="verify.title">Verify Your Phone</h2>
+    <p style="text-align:center; color:var(--gray); margin-bottom:1.5rem;" id="verify-subtext">
+      Enter the 6-digit code we sent to your phone.
+    </p>
+
+    <input type="text" id="otp-code" placeholder="6-digit code" data-i18n-placeholder="verify.codePlaceholder" maxlength="6" inputmode="numeric" class="modal-input" style="text-align:center; letter-spacing:6px; font-size:1.3rem;">
+
+    <button id="verify-btn" class="btn btn-primary btn-block" style="margin-top:10px;" data-i18n="verify.btn">Verify</button>
+    <button id="resend-btn" class="btn btn-secondary btn-block" style="margin-top:10px;" data-i18n="verify.resend">Resend Code</button>
+
+    <a href="index.html" class="back-link">&larr; <span data-i18n="back.home">Back to Homepage</span></a>
+  </div>
+</div>
+
+<script src="js/map.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/support-widget.js"></script>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const phone = params.get('phone');
+  const devOtp = params.get('dev');
+
+  if (!phone) {
+    document.getElementById('verify-subtext').textContent = 'No phone number provided. Please register again.';
+  } else if (devOtp) {
+    document.getElementById('verify-subtext').innerHTML =
+      `Enter the 6-digit code sent to <strong>${phone}</strong>.<br>
+       <span style="color:#00b894;">DEV MODE - your code is: ${devOtp}</span>`;
+  } else {
+    document.getElementById('verify-subtext').innerHTML = `Enter the 6-digit code sent to <strong>${phone}</strong>.`;
+  }
+
+  document.getElementById('verify-btn').addEventListener('click', () => {
+    if (!phone) return alert('Missing phone number - please register again.');
+    performVerifyOtp(phone);
+  });
+
+  document.getElementById('resend-btn').addEventListener('click', () => {
+    if (!phone) return alert('Missing phone number - please register again.');
+    performResendOtp(phone);
+  });
+</script>
+</body>
+</html>

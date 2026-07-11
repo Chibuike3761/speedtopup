@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('naijafast_theme') || 'light');</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Confirming Payment - NaijaFast Data</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<link rel="stylesheet" href="css/style.css"/>
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="container">
+    <div class="logo">NaijaFast <span style="color:#00d4aa">Data</span></div>
+    <div class="nav-links">
+      <button id="lang-toggle-btn" class="lang-toggle-btn" onclick="naijafastToggleLanguage()">🇳🇬 Pidgin</button>
+      <button id="theme-toggle-btn" class="theme-toggle-btn" onclick="naijafastToggleTheme()">🌙</button>
+    </div>
+  </div>
+</nav>
+
+<div class="auth-page">
+  <div class="auth-card" style="text-align:center;">
+    <i class="fas fa-spinner fa-spin" style="font-size:2rem; color:var(--primary); margin-bottom:1rem;" id="callback-icon"></i>
+    <h2 id="callback-title">Confirming your payment...</h2>
+    <p id="callback-message" style="color:var(--gray); margin-top:0.8rem;">Please wait a moment.</p>
+    <a href="services.html" class="back-link">&larr; <span data-i18n="back.services">Back to Services</span></a>
+  </div>
+</div>
+
+<script src="js/map.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/support-widget.js"></script>
+<script>
+  (async function () {
+    const params = new URLSearchParams(window.location.search);
+    const provider = params.get('provider') === 'crypto' ? 'crypto' : 'paystack';
+    const reference = params.get('reference') || params.get('trxref');
+    const paymentId = params.get('NP_id') || params.get('paymentId');
+    const iconEl = document.getElementById('callback-icon');
+    const titleEl = document.getElementById('callback-title');
+    const msgEl = document.getElementById('callback-message');
+
+    if (!localStorage.getItem('token')) {
+      titleEl.textContent = 'Please log in';
+      msgEl.textContent = 'Log in to confirm this payment.';
+      iconEl.className = 'fas fa-exclamation-circle';
+      iconEl.style.color = '#ef4444';
+      return;
+    }
+
+    if (!reference) {
+      titleEl.textContent = 'Missing payment reference';
+      msgEl.textContent = 'We could not find a payment reference in the URL.';
+      iconEl.className = 'fas fa-exclamation-circle';
+      iconEl.style.color = '#ef4444';
+      return;
+    }
+
+    if (params.get('cancelled')) {
+      titleEl.textContent = 'Payment cancelled';
+      msgEl.textContent = 'You cancelled the crypto payment. No funds were added.';
+      iconEl.className = 'fas fa-times-circle';
+      iconEl.style.color = '#ef4444';
+      setTimeout(() => { window.location.href = 'services.html'; }, 4000);
+      return;
+    }
+
+    const verifyUrl = provider === 'crypto'
+      ? `${API_BASE}/wallet/fund/crypto/verify/${encodeURIComponent(reference)}${paymentId ? `?paymentId=${encodeURIComponent(paymentId)}` : ''}`
+      : `${API_BASE}/wallet/fund/verify/${encodeURIComponent(reference)}`;
+
+    try {
+      const res = await fetch(verifyUrl, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        iconEl.className = 'fas fa-check-circle';
+        iconEl.style.color = '#10b981';
+        titleEl.textContent = 'Payment confirmed!';
+        msgEl.textContent = data.alreadyProcessed
+          ? `Your wallet balance is ₦${data.balance}.`
+          : `₦${data.amount} was added. New balance: ₦${data.balance}.`;
+      } else if (provider === 'crypto' && ['waiting', 'confirming', 'sending', 'partially_paid'].includes(data.status)) {
+        iconEl.className = 'fas fa-clock';
+        iconEl.style.color = '#f59e0b';
+        titleEl.textContent = 'Still processing';
+        msgEl.textContent = 'Your crypto payment is still confirming on the blockchain. Check Transaction History shortly - your wallet will update automatically once it settles.';
+      } else {
+        iconEl.className = 'fas fa-times-circle';
+        iconEl.style.color = '#ef4444';
+        titleEl.textContent = 'Payment not confirmed';
+        msgEl.textContent = data.error || 'This payment could not be verified.';
+      }
+    } catch (err) {
+      iconEl.className = 'fas fa-times-circle';
+      iconEl.style.color = '#ef4444';
+      titleEl.textContent = 'Could not reach the server';
+      msgEl.textContent = 'Check your connection and visit Transaction History to confirm.';
+    }
+
+    setTimeout(() => { window.location.href = 'services.html'; }, 4000);
+  })();
+</script>
+</body>
+</html>
