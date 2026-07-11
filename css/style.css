@@ -125,6 +125,50 @@ main { flex: 1; }
 }
 .lang-toggle-btn:hover { background: rgba(0,212,170,0.15); }
 
+/* ===== LANGUAGE TOGGLE SWITCH ===== */
+.lang-toggle-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  width: 92px;
+  height: 32px;
+  background: rgba(255,255,255,0.1);
+  border: 1.5px solid var(--primary);
+  border-radius: 20px;
+  cursor: pointer;
+  padding: 3px;
+  flex-shrink: 0;
+}
+.lang-toggle-switch .lang-toggle-option {
+  position: relative;
+  flex: 1;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  z-index: 2;
+  color: rgba(255,255,255,0.55);
+  transition: color 0.2s ease;
+  pointer-events: none;
+}
+.lang-toggle-switch .lang-toggle-option-en { color: #0b0f14; }
+.lang-toggle-switch[data-current-lang="pcm"] .lang-toggle-option-en { color: rgba(255,255,255,0.55); }
+.lang-toggle-switch[data-current-lang="pcm"] .lang-toggle-option-pcm { color: #0b0f14; }
+.lang-toggle-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: calc(50% - 3px);
+  height: calc(100% - 6px);
+  background: var(--primary);
+  border-radius: 16px;
+  transition: transform 0.2s ease;
+  z-index: 1;
+}
+.lang-toggle-switch[data-current-lang="pcm"] .lang-toggle-knob {
+  transform: translateX(100%);
+}
+
 .wallet-badge {
   background: rgba(255,255,255,0.1);
   padding: 6px 14px;
@@ -297,6 +341,74 @@ footer p { margin: 0.2rem 0; }
   outline: none;
   border-color: var(--primary);
   box-shadow: 0 0 0 3px rgba(0,212,170,0.15);
+}
+
+/* Remove the up/down spinner arrows on all number inputs site-wide */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+/* Read-only "amount is fixed by plan" display, used for Data/TV where price comes from the selected bundle */
+.modal-amount-display {
+  width: 100%;
+  padding: 14px 16px;
+  margin: 8px 0;
+  border: 2px dashed var(--border-color);
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-page);
+}
+
+/* Billers-code verification row (TV / Electricity: confirm the customer name before paying) */
+.verify-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0;
+}
+.verify-row .modal-input { margin: 0; flex: 1; }
+.verify-btn {
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 2px solid var(--primary);
+  background: transparent;
+  color: var(--primary);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.verify-btn:hover { background: rgba(0,212,170,0.1); }
+.verify-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.verify-result {
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  margin: 4px 0 8px;
+}
+.verify-result.verify-ok {
+  background: rgba(0,212,170,0.12);
+  color: #00d4aa;
+  border: 1.5px solid rgba(0,212,170,0.4);
+}
+.verify-result.verify-fail {
+  background: rgba(239,68,68,0.12);
+  color: #ef4444;
+  border: 1.5px solid rgba(239,68,68,0.4);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .input-wrap { position: relative; }

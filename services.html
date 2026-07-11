@@ -22,7 +22,7 @@
       <button class="btn btn-primary" style="padding:6px 16px; font-size:0.85rem;" onclick="openFundModal()" data-i18n="svc.nav.fundwallet">+ Fund Wallet</button>
       <span class="wallet-badge" id="discount-badge" style="display:none;">🎁 <span id="discount-badge-text">2% off first order</span></span>
       <button class="nav-btn-logout" onclick="logout()" data-i18n="nav.logout">Logout</button>
-      <button id="lang-toggle-btn" class="lang-toggle-btn" onclick="naijafastToggleLanguage()">🇳🇬 Pidgin</button>
+      <button id="lang-toggle-btn" class="lang-toggle-switch" onclick="naijafastToggleLanguage()" role="switch" aria-checked="false" aria-label="Switch to Pidgin"><span class="lang-toggle-option lang-toggle-option-en">EN</span><span class="lang-toggle-option lang-toggle-option-pcm">PCM</span><span class="lang-toggle-knob"></span></button>
       <button id="theme-toggle-btn" class="theme-toggle-btn" onclick="naijafastToggleTheme()">🌙</button>
     </div>
   </div>
@@ -167,11 +167,17 @@
     </div>
 
     <label id="service-billers-label" style="font-size:0.85rem; color:var(--gray); display:block; margin-top:8px;" data-i18n="modal.phoneLabel">Phone Number</label>
-    <input type="text" id="service-billers" placeholder="Enter value" data-i18n-placeholder="modal.enterValue" class="modal-input">
+
+    <div class="verify-row">
+      <input type="text" id="service-billers" placeholder="Enter value" data-i18n-placeholder="modal.enterValue" class="modal-input">
+      <button type="button" id="service-verify-btn" class="verify-btn" style="display:none;" onclick="verifyBillersCode(this)" data-i18n="modal.verify">Verify</button>
+    </div>
+    <div id="service-verify-result" class="verify-result" style="display:none;"></div>
 
     <input type="number" id="service-amount" placeholder="Amount (₦)" data-i18n-placeholder="amount.ngn" class="modal-input" min="1">
+    <div id="service-amount-display" class="modal-amount-display" style="display:none;"></div>
 
-    <button onclick="submitServicePurchase(this)" class="btn btn-primary btn-block" style="margin-top:10px;" data-i18n="modal.payNow">Pay Now</button>
+    <button id="service-pay-btn" onclick="submitServicePurchase(this)" class="btn btn-primary btn-block" style="margin-top:10px;" data-i18n="modal.payNow">Pay Now</button>
     <button onclick="closeServiceModal()" class="btn btn-secondary btn-block" style="margin-top:10px;" data-i18n="modal.cancel">Cancel</button>
   </div>
 </div>

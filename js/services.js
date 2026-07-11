@@ -26,6 +26,7 @@ const SERVICE_CONFIG = {
       { value: 'etisalat-data', label: '9mobile' }
     ],
     needsVariation: true,
+    amountFromVariation: true, // price comes from the selected bundle, no manual amount entry
     billersLabel: 'Phone Number',
     billersIsPhone: true
   },
@@ -37,6 +38,8 @@ const SERVICE_CONFIG = {
       { value: 'startimes', label: 'StarTimes' }
     ],
     needsVariation: true,
+    amountFromVariation: true, // price comes from the selected bouquet, no manual amount entry
+    needsVerify: true, // look up the customer's name from their smartcard/IUC before paying
     billersLabel: 'Smartcard / IUC Number',
     billersIsPhone: false
   },
@@ -59,6 +62,7 @@ const SERVICE_CONFIG = {
       { value: 'prepaid', label: 'Prepaid' },
       { value: 'postpaid', label: 'Postpaid' }
     ],
+    needsVerify: true, // look up the customer's name from their meter number before paying
     billersLabel: 'Meter Number',
     billersIsPhone: false
   },
@@ -679,6 +683,11 @@ async function checkOneNow(reference, btn) {
   btn.disabled = false;
 }
 
+// Tracks the last successful verification, so we know it's still valid for
+// whatever's currently in the network/variation/billers fields. Cleared any
+// time one of those changes, forcing a re-verify before Pay Now is allowed.
+let verifiedBillers = null;
+
 function openServiceModal(category) {
   const cfg = SERVICE_CONFIG[category];
   if (!cfg) return;
@@ -689,6 +698,7 @@ function openServiceModal(category) {
   }
 
   currentCategory = category;
+  verifiedBillers = null;
   document.getElementById('service-modal-title').textContent = cfg.title;
 
   const networkSelect = document.getElementById('service-network');
@@ -712,8 +722,119 @@ function openServiceModal(category) {
 
   document.getElementById('service-billers-label').textContent = cfg.billersLabel;
   document.getElementById('service-billers').value = '';
-  document.getElementById('service-amount').value = '';
+
+  // Amount: either a manual field (airtime, electricity, waec) or a read-only
+  // display driven by the chosen plan's price (data, tv).
+  const amountInput = document.getElementById('service-amount');
+  const amountDisplay = document.getElementById('service-amount-display');
+  amountInput.value = '';
+  if (cfg.amountFromVariation) {
+    amountInput.style.display = 'none';
+    amountDisplay.style.display = 'block';
+    amountDisplay.textContent = 'Select a plan to see the price';
+  } else {
+    amountInput.style.display = 'block';
+    amountDisplay.style.display = 'none';
+  }
+
+  // Verify row: only shown for categories where we look up a customer name
+  // (TV smartcard/IUC, electricity meter) before allowing payment.
+  const verifyBtn = document.getElementById('service-verify-btn');
+  const verifyResult = document.getElementById('service-verify-result');
+  verifyResult.style.display = 'none';
+  verifyResult.className = 'verify-result';
+  verifyBtn.style.display = cfg.needsVerify ? 'inline-block' : 'none';
+
+  updatePayButtonState();
   document.getElementById('serviceModal').classList.add('active');
+}
+
+// Pay Now is disabled until: (a) categories that need verification have a
+// fresh, matching verified name, and (b) an amount is actually present.
+function updatePayButtonState() {
+  const cfg = SERVICE_CONFIG[currentCategory];
+  const payBtn = document.getElementById('service-pay-btn');
+  if (!cfg) { payBtn.disabled = false; return; }
+
+  if (cfg.needsVerify && !currentVerificationMatches()) {
+    payBtn.disabled = true;
+    return;
+  }
+  payBtn.disabled = false;
+}
+
+function currentVerificationMatches() {
+  if (!verifiedBillers) return false;
+  const serviceID = document.getElementById('service-network').value;
+  const billersCode = document.getElementById('service-billers').value.trim();
+  const variationCode = document.getElementById('service-variation').value;
+  return verifiedBillers.serviceID === serviceID &&
+    verifiedBillers.billersCode === billersCode &&
+    verifiedBillers.variationCode === variationCode;
+}
+
+function clearVerificationState() {
+  verifiedBillers = null;
+  const verifyResult = document.getElementById('service-verify-result');
+  verifyResult.style.display = 'none';
+  updatePayButtonState();
+}
+
+async function verifyBillersCode(btn) {
+  const cfg = SERVICE_CONFIG[currentCategory];
+  const serviceID = document.getElementById('service-network').value;
+  const billersCode = document.getElementById('service-billers').value.trim();
+  const variationCode = document.getElementById('service-variation').value;
+  const verifyResult = document.getElementById('service-verify-result');
+
+  if (!serviceID) return alert('Please select a provider first');
+  if (!billersCode) return alert(`Please enter the ${cfg.billersLabel.toLowerCase()}`);
+  if (currentCategory === 'electricity' && !variationCode) return alert('Please select Prepaid or Postpaid first');
+
+  const original = btn.textContent;
+  btn.textContent = (typeof NAIJAFAST_I18N !== 'undefined' && NAIJAFAST_I18N[localStorage.getItem('naijafast_lang') || 'en']?.['modal.verifying']) || 'Verifying...';
+  btn.disabled = true;
+  verifyResult.style.display = 'none';
+
+  try {
+    const res = await fetch(`${API_BASE}/services/verify`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('token')}`
+      },
+      body: JSON.stringify({
+        serviceID,
+        billersCode,
+        type: currentCategory === 'electricity' ? variationCode : undefined
+      })
+    });
+    const data = await res.json();
+
+    const name = data?.content?.Customer_Name || data?.content?.customerName ||
+      data?.content?.customer_name || data?.content?.Meter_Number_Name;
+
+    if (res.ok && name) {
+      verifiedBillers = { serviceID, billersCode, variationCode, name };
+      verifyResult.className = 'verify-result verify-ok';
+      verifyResult.textContent = `✅ ${name}`;
+      verifyResult.style.display = 'block';
+    } else {
+      verifiedBillers = null;
+      verifyResult.className = 'verify-result verify-fail';
+      verifyResult.textContent = `❌ ${data.error || data?.content?.error || 'Could not verify this number - please check it and try again.'}`;
+      verifyResult.style.display = 'block';
+    }
+  } catch (err) {
+    verifiedBillers = null;
+    verifyResult.className = 'verify-result verify-fail';
+    verifyResult.textContent = '❌ Could not reach the server. Is the backend running?';
+    verifyResult.style.display = 'block';
+  } finally {
+    btn.textContent = original;
+    btn.disabled = false;
+    updatePayButtonState();
+  }
 }
 
 // When a network is picked for data/tv, fetch live variation plans from the backend
@@ -724,7 +845,13 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   document.getElementById('service-network').addEventListener('change', async (e) => {
+    clearVerificationState();
+
     const cfg = SERVICE_CONFIG[currentCategory];
+    if (cfg && cfg.amountFromVariation) {
+      document.getElementById('service-amount-display').textContent = 'Select a plan to see the price';
+      document.getElementById('service-amount').value = '';
+    }
     if (!cfg || !cfg.needsVariation || cfg.variationOptions) return; // electricity uses fixed prepaid/postpaid
 
     const variationSelect = document.getElementById('service-variation');
@@ -741,11 +868,33 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!res.ok || !list.length) throw new Error('none');
 
       variationSelect.innerHTML = '<option value="">Select a plan</option>' +
-        list.map(v => `<option value="${v.variation_code}">${v.name} - ₦${v.variation_amount}</option>`).join('');
+        list.map(v => `<option value="${v.variation_code}" data-amount="${v.variation_amount}">${v.name} - ₦${v.variation_amount}</option>`).join('');
     } catch (err) {
-      variationSelect.innerHTML = '<option value="">Type plan code manually below (VTpass not connected yet)</option>';
+      variationSelect.innerHTML = '<option value="">Plans unavailable right now (VTpass not connected yet)</option>';
     }
   });
+
+  document.getElementById('service-variation').addEventListener('change', (e) => {
+    clearVerificationState();
+
+    const cfg = SERVICE_CONFIG[currentCategory];
+    if (!cfg || !cfg.amountFromVariation) return;
+
+    const selectedOption = e.target.selectedOptions[0];
+    const amount = selectedOption ? selectedOption.getAttribute('data-amount') : null;
+    const amountDisplay = document.getElementById('service-amount-display');
+    const amountInput = document.getElementById('service-amount');
+
+    if (amount) {
+      amountInput.value = amount;
+      amountDisplay.textContent = `Amount: ₦${Number(amount).toLocaleString()}`;
+    } else {
+      amountInput.value = '';
+      amountDisplay.textContent = 'Select a plan to see the price';
+    }
+  });
+
+  document.getElementById('service-billers').addEventListener('input', clearVerificationState);
 });
 
 function closeServiceModal() {
@@ -764,6 +913,9 @@ async function submitServicePurchase(btn) {
   if (cfg.needsVariation && !variationCode) return alert('Please select a plan/bouquet');
   if (!billersCode) return alert(`Please enter the ${cfg.billersLabel.toLowerCase()}`);
   if (!amount) return alert('Please enter an amount');
+  if (cfg.needsVerify && !currentVerificationMatches()) {
+    return alert(`Please verify the ${cfg.billersLabel.toLowerCase()} first so you can confirm the customer name before paying.`);
+  }
 
   const original = btn.textContent;
   btn.textContent = 'Processing...';

@@ -55,6 +55,10 @@ const NAIJAFAST_I18N = {
     "modal.payNow": "Pay Now",
     "modal.phoneLabel": "Phone Number",
     "modal.enterValue": "Enter value",
+    "modal.verify": "Verify",
+    "modal.verifying": "Verifying...",
+    "modal.verifyAgain": "Re-verify",
+    "modal.fixedAmount": "Amount",
 
     "svc.nav.fundwallet": "+ Fund Wallet",
     "svc.heading": "What would you like to buy?",
@@ -202,6 +206,10 @@ const NAIJAFAST_I18N = {
     "modal.payNow": "Pay Now Now",
     "modal.phoneLabel": "Phone Number",
     "modal.enterValue": "Type am",
+    "modal.verify": "Check Am",
+    "modal.verifying": "Dey check...",
+    "modal.verifyAgain": "Check Am Again",
+    "modal.fixedAmount": "Amount",
 
     "svc.nav.fundwallet": "+ Put Money",
     "svc.heading": "Wetin you wan buy?",
@@ -318,10 +326,10 @@ function naijafastApplyLanguage(lang) {
 
   const toggleBtn = document.getElementById("lang-toggle-btn");
   if (toggleBtn) {
-    // Button always shows what you'd switch TO, not the current language
-    const nextLang = lang === "pcm" ? "en" : "pcm";
-    toggleBtn.textContent = "\uD83C\uDDF3\uD83C\uDDEC " + NAIJAFAST_I18N[nextLang]["lang.toggle"];
+    // Toggle switch: knob slides to whichever side is active, both labels always visible
     toggleBtn.setAttribute("data-current-lang", lang);
+    toggleBtn.setAttribute("aria-checked", lang === "pcm" ? "true" : "false");
+    toggleBtn.setAttribute("aria-label", lang === "pcm" ? "Switch to English" : "Switch to Pidgin");
   }
 }
 
