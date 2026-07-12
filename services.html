@@ -254,8 +254,19 @@
       <option value="electricity" data-i18n="cat.electricity">Electricity</option>
     </select>
     <select id="ben-network" class="modal-input"><option value="" data-i18n="ben.selectCategoryFirst">Select category first</option></select>
-    <input type="text" id="ben-billers" placeholder="Phone / Meter / Smartcard number" data-i18n-placeholder="ben.billersPlaceholder" class="modal-input">
-    <button onclick="submitBeneficiary(this)" class="btn btn-primary btn-block" style="margin-top:10px;" data-i18n="ben.save">Save</button>
+
+    <div id="ben-variation-wrap" style="display:none;">
+      <select id="ben-variation" class="modal-input" disabled><option value="">Choose network first...</option></select>
+    </div>
+
+    <label id="ben-billers-label" style="font-size:0.85rem; color:var(--gray); display:block; margin-top:8px;">Phone / Meter / Smartcard number</label>
+    <div class="verify-row">
+      <input type="text" id="ben-billers" placeholder="Phone / Meter / Smartcard number" data-i18n-placeholder="ben.billersPlaceholder" class="modal-input">
+      <button type="button" id="ben-verify-btn" class="verify-btn" style="display:none;" onclick="verifyBenBillersCode(this)">Verify</button>
+    </div>
+    <div id="ben-verify-result" class="verify-result" style="display:none;"></div>
+
+    <button id="ben-submit-btn" onclick="submitBeneficiary(this)" class="btn btn-primary btn-block" style="margin-top:10px;" data-i18n="ben.save">Save</button>
     <button onclick="closeBeneficiaryModal()" class="btn btn-secondary btn-block" style="margin-top:10px;" data-i18n="modal.cancel">Cancel</button>
   </div>
 </div>

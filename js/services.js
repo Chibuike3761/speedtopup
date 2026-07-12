@@ -323,16 +323,224 @@ async function redeemLoyaltyPoints(btn) {
 }
 
 // ---------- SAVED BENEFICIARIES ----------
-const BEN_NETWORKS = {
-  airtime: [{ v: 'mtn', l: 'MTN' }, { v: 'glo', l: 'Glo' }, { v: 'airtel', l: 'Airtel' }, { v: 'etisalat', l: '9mobile' }],
-  data: [{ v: 'mtn-data', l: 'MTN' }, { v: 'glo-data', l: 'Glo' }, { v: 'airtel-data', l: 'Airtel' }, { v: 'etisalat-data', l: '9mobile' }],
-  tv: [{ v: 'dstv', l: 'DSTV' }, { v: 'gotv', l: 'GOTV' }, { v: 'startimes', l: 'StarTimes' }],
-  electricity: [{ v: 'ikeja-electric', l: 'Ikeja Electric' }, { v: 'eko-electric', l: 'Eko Electric' }, { v: 'abuja-electric', l: 'Abuja Electric' }]
-};
+// Mirrors the Auto Top-Up modal's input pattern (uses the same SERVICE_CONFIG):
+// Data/TV let you remember a specific plan, TV/Electricity require a
+// name-verify before saving so a beneficiary never gets saved with a typo'd
+// meter/smartcard number.
+let benVerifiedBillers = null;
 
-function populateBenNetworks() { fillNetworkSelect('ben-category', 'ben-network'); }
+function openBeneficiaryModal() {
+  document.getElementById('ben-label').value = '';
+  document.getElementById('ben-category').value = '';
+  document.getElementById('ben-network').innerHTML = '<option value="">Select category first</option>';
+  document.getElementById('ben-variation-wrap').style.display = 'none';
+  document.getElementById('ben-billers-label').textContent = 'Phone / Meter / Smartcard number';
+  document.getElementById('ben-billers').value = '';
+  document.getElementById('ben-verify-btn').style.display = 'none';
+  document.getElementById('ben-verify-result').style.display = 'none';
+  benVerifiedBillers = null;
+  updateBenSubmitState();
+  document.getElementById('beneficiaryModal').classList.add('active');
+}
+function closeBeneficiaryModal() { document.getElementById('beneficiaryModal').classList.remove('active'); }
 
-// ---------- AUTO TOP-UP ----------
+function populateBenNetworks() {
+  const category = document.getElementById('ben-category').value;
+  const cfg = SERVICE_CONFIG[category];
+  const networkSelect = document.getElementById('ben-network');
+  const variationWrap = document.getElementById('ben-variation-wrap');
+  const variationSelect = document.getElementById('ben-variation');
+  const billersLabel = document.getElementById('ben-billers-label');
+  const billersInput = document.getElementById('ben-billers');
+  const verifyBtn = document.getElementById('ben-verify-btn');
+  const verifyResult = document.getElementById('ben-verify-result');
+
+  benVerifiedBillers = null;
+  verifyResult.style.display = 'none';
+  billersInput.value = '';
+
+  if (!cfg) {
+    networkSelect.innerHTML = '<option value="">Select category first</option>';
+    variationWrap.style.display = 'none';
+    verifyBtn.style.display = 'none';
+    updateBenSubmitState();
+    return;
+  }
+
+  networkSelect.innerHTML = '<option value="">Select</option>' +
+    cfg.networks.map(n => `<option value="${n.value}">${n.label}</option>`).join('');
+  billersLabel.textContent = cfg.billersLabel;
+  billersInput.placeholder = cfg.billersLabel;
+  verifyBtn.style.display = cfg.needsVerify ? 'inline-block' : 'none';
+
+  if (cfg.needsVariation) {
+    variationWrap.style.display = 'block';
+    if (cfg.variationOptions) {
+      variationSelect.innerHTML = '<option value="">Select</option>' +
+        cfg.variationOptions.map(v => `<option value="${v.value}">${v.label}</option>`).join('');
+      variationSelect.disabled = false;
+    } else {
+      variationSelect.innerHTML = '<option value="">Choose network first...</option>';
+      variationSelect.disabled = true;
+    }
+  } else {
+    variationWrap.style.display = 'none';
+  }
+
+  updateBenSubmitState();
+}
+
+function updateBenSubmitState() {
+  const category = document.getElementById('ben-category').value;
+  const cfg = SERVICE_CONFIG[category];
+  const submitBtn = document.getElementById('ben-submit-btn');
+  submitBtn.disabled = !!(cfg && cfg.needsVerify && !benVerificationMatches());
+}
+
+function benVerificationMatches() {
+  if (!benVerifiedBillers) return false;
+  const serviceID = document.getElementById('ben-network').value;
+  const billersCode = document.getElementById('ben-billers').value.trim();
+  const variationCode = document.getElementById('ben-variation').value;
+  return benVerifiedBillers.serviceID === serviceID &&
+    benVerifiedBillers.billersCode === billersCode &&
+    benVerifiedBillers.variationCode === variationCode;
+}
+
+async function verifyBenBillersCode(btn) {
+  const category = document.getElementById('ben-category').value;
+  const cfg = SERVICE_CONFIG[category];
+  const serviceID = document.getElementById('ben-network').value;
+  const billersCode = document.getElementById('ben-billers').value.trim();
+  const variationCode = document.getElementById('ben-variation').value;
+  const verifyResult = document.getElementById('ben-verify-result');
+
+  if (!serviceID) return alert('Please select a provider first');
+  if (!billersCode) return alert(`Please enter the ${cfg.billersLabel.toLowerCase()}`);
+  if (category === 'electricity' && !variationCode) return alert('Please select Prepaid or Postpaid first');
+
+  const original = btn.textContent;
+  btn.textContent = 'Verifying...';
+  btn.disabled = true;
+  verifyResult.style.display = 'none';
+
+  try {
+    const res = await fetch(`${API_BASE}/services/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+      body: JSON.stringify({ serviceID, billersCode, type: category === 'electricity' ? variationCode : undefined })
+    });
+    const data = await res.json();
+    const name = data?.content?.Customer_Name || data?.content?.customerName || data?.content?.customer_name;
+
+    if (res.ok && name) {
+      benVerifiedBillers = { serviceID, billersCode, variationCode, name };
+      verifyResult.className = 'verify-result verify-ok';
+      verifyResult.textContent = `✅ ${name}`;
+      verifyResult.style.display = 'block';
+    } else {
+      benVerifiedBillers = null;
+      verifyResult.className = 'verify-result verify-fail';
+      verifyResult.textContent = `❌ ${data.error || data?.content?.error || 'Could not verify this number - please check it and try again.'}`;
+      verifyResult.style.display = 'block';
+    }
+  } catch (err) {
+    benVerifiedBillers = null;
+    verifyResult.className = 'verify-result verify-fail';
+    verifyResult.textContent = '❌ Could not reach the server. Is the backend running?';
+    verifyResult.style.display = 'block';
+  } finally {
+    btn.textContent = original;
+    btn.disabled = false;
+    updateBenSubmitState();
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const benNetworkSelect = document.getElementById('ben-network');
+  const benVariationSelect = document.getElementById('ben-variation');
+  if (!benNetworkSelect || !benVariationSelect) return; // this page doesn't have the modal
+
+  benNetworkSelect.addEventListener('change', async (e) => {
+    benVerifiedBillers = null;
+    document.getElementById('ben-verify-result').style.display = 'none';
+    updateBenSubmitState();
+
+    const category = document.getElementById('ben-category').value;
+    const cfg = SERVICE_CONFIG[category];
+    if (!cfg || !cfg.needsVariation || cfg.variationOptions) return; // electricity uses fixed prepaid/postpaid
+
+    const serviceID = e.target.value;
+    if (!serviceID) return;
+
+    benVariationSelect.disabled = true;
+    benVariationSelect.innerHTML = '<option>Loading plans...</option>';
+    try {
+      const res = await fetch(`${API_BASE}/services/variations/${serviceID}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      const data = await res.json();
+      const list = data?.content?.varations || data?.content?.variations || [];
+      if (!res.ok || !list.length) throw new Error('none');
+
+      benVariationSelect.innerHTML = '<option value="">Select a plan</option>' +
+        list.map(v => `<option value="${v.variation_code}" data-amount="${v.variation_amount}">${v.name} - ₦${v.variation_amount}</option>`).join('');
+      benVariationSelect.disabled = false;
+    } catch (err) {
+      benVariationSelect.innerHTML = '<option value="">Plans unavailable right now (VTpass not connected yet)</option>';
+    }
+  });
+
+  benVariationSelect.addEventListener('change', () => {
+    benVerifiedBillers = null;
+    document.getElementById('ben-verify-result').style.display = 'none';
+    updateBenSubmitState();
+  });
+
+  document.getElementById('ben-billers').addEventListener('input', () => {
+    benVerifiedBillers = null;
+    document.getElementById('ben-verify-result').style.display = 'none';
+    updateBenSubmitState();
+  });
+});
+
+async function submitBeneficiary(btn) {
+  const label = document.getElementById('ben-label').value.trim();
+  const category = document.getElementById('ben-category').value;
+  const cfg = SERVICE_CONFIG[category];
+  const serviceID = document.getElementById('ben-network').value;
+  const variationCode = document.getElementById('ben-variation').value;
+  const billersCode = document.getElementById('ben-billers').value.trim();
+
+  if (!label || !category || !serviceID || !billersCode) return alert('All fields are required');
+  if (cfg && cfg.needsVerify && !benVerificationMatches()) {
+    return alert(`Please verify the ${cfg.billersLabel.toLowerCase()} first so you can confirm the customer name before saving.`);
+  }
+
+  const original = btn.textContent;
+  btn.textContent = 'Saving...';
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`${API_BASE}/beneficiaries`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+      body: JSON.stringify({ label, category, serviceID, billersCode, variationCode: variationCode || undefined })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      closeBeneficiaryModal();
+      loadBeneficiaries();
+    } else {
+      alert(data.error || 'Could not save beneficiary');
+    }
+  } catch (err) {
+    alert('Could not reach the server.');
+  } finally {
+    btn.textContent = original;
+    btn.disabled = false;
+  }
+}
 // Reuses SERVICE_CONFIG (defined above for the main Buy/Pay modal) so this
 // modal behaves identically per category: Data/TV pull real plan prices with
 // no manual amount entry, TV/Electricity require a name-verify before saving,
@@ -552,53 +760,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-function fillNetworkSelect(categoryId, networkId) {
-  const category = document.getElementById(categoryId).value;
-  const select = document.getElementById(networkId);
-  const options = BEN_NETWORKS[category] || [];
-  select.innerHTML = options.length
-    ? '<option value="">Select</option>' + options.map(o => `<option value="${o.v}">${o.l}</option>`).join('')
-    : '<option value="">Select category first</option>';
-}
-
-function openBeneficiaryModal() { document.getElementById('beneficiaryModal').classList.add('active'); }
-function closeBeneficiaryModal() { document.getElementById('beneficiaryModal').classList.remove('active'); }
-
-async function submitBeneficiary(btn) {
-  const label = document.getElementById('ben-label').value.trim();
-  const category = document.getElementById('ben-category').value;
-  const serviceID = document.getElementById('ben-network').value;
-  const billersCode = document.getElementById('ben-billers').value.trim();
-
-  if (!label || !category || !serviceID || !billersCode) return alert('All fields are required');
-
-  const original = btn.textContent;
-  btn.textContent = 'Saving...';
-  btn.disabled = true;
-
-  try {
-    const res = await fetch(`${API_BASE}/beneficiaries`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
-      body: JSON.stringify({ label, category, serviceID, billersCode })
-    });
-    const data = await res.json();
-    if (res.ok) {
-      closeBeneficiaryModal();
-      document.getElementById('ben-label').value = '';
-      document.getElementById('ben-billers').value = '';
-      loadBeneficiaries();
-    } else {
-      alert(data.error || 'Could not save beneficiary');
-    }
-  } catch (err) {
-    alert('Could not reach the server.');
-  } finally {
-    btn.textContent = original;
-    btn.disabled = false;
-  }
-}
-
 async function loadBeneficiaries() {
   const container = document.getElementById('beneficiary-list');
   if (!container) return;
@@ -619,7 +780,7 @@ async function loadBeneficiaries() {
           <div class="tx-date">${b.billersCode}</div>
         </div>
         <div class="tx-right">
-          <button class="btn btn-primary" style="padding:6px 14px; font-size:0.8rem;" onclick="useBeneficiary('${b.category}','${b.serviceID}','${b.billersCode}')">Use</button>
+          <button class="btn btn-primary" style="padding:6px 14px; font-size:0.8rem;" onclick="useBeneficiary('${b.category}','${b.serviceID}','${b.billersCode}','${b.variationCode || ''}')">Use</button>
           <button class="btn btn-secondary" style="padding:6px 14px; font-size:0.8rem; margin-top:6px;" onclick="deleteBeneficiary('${b._id}')">Delete</button>
         </div>
       </div>
@@ -629,12 +790,31 @@ async function loadBeneficiaries() {
   }
 }
 
-function useBeneficiary(category, serviceID, billersCode) {
+function useBeneficiary(category, serviceID, billersCode, variationCode) {
   openServiceModal(category);
   setTimeout(() => {
     document.getElementById('service-network').value = serviceID;
     document.getElementById('service-network').dispatchEvent(new Event('change'));
     document.getElementById('service-billers').value = billersCode;
+
+    // The network change above kicks off an async fetch of that provider's
+    // plans (for Data/TV) - wait for it to actually finish populating before
+    // trying to select the remembered plan, or the option won't exist yet.
+    if (variationCode) {
+      const variationSelect = document.getElementById('service-variation');
+      let attempts = 0;
+      const tryApply = setInterval(() => {
+        attempts += 1;
+        const hasOption = [...variationSelect.options].some(o => o.value === variationCode);
+        if (hasOption) {
+          variationSelect.value = variationCode;
+          variationSelect.dispatchEvent(new Event('change'));
+          clearInterval(tryApply);
+        } else if (attempts > 20) { // ~4 seconds - plans never loaded (e.g. VTpass not connected)
+          clearInterval(tryApply);
+        }
+      }, 200);
+    }
   }, 50);
 }
 
