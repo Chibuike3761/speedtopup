@@ -23,6 +23,7 @@ const transactionSchema = new mongoose.Schema(
     serviceID: String, // e.g. 'mtn', 'dstv', 'ikeja-electric'
     variationCode: String,
     billersCode: String, // meter no. / smartcard no. / phone
+    recipientEmail: String, // optional - currently only used by WAEC so the PIN/serial can go to whoever needs it, not just the account owner
     amount: { type: Number, required: true },
     discountApplied: { type: Number, default: 0 }, // ₦ shaved off by a first-purchase speedtest voucher, for reporting/capping
     status: { type: String, enum: ['pending', 'success', 'failed'], default: 'pending' },

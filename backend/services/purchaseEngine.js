@@ -101,7 +101,7 @@ async function settleFromProviderResponse({ user, txn, result, amountToCharge, d
  *  - the auto top-up scheduler (services/autoTopUpScheduler.js)
  * so both go through exactly the same money-safety logic.
  */
-async function executePurchase({ userId, category, serviceID, variationCode, amount, phone, billersCode }) {
+async function executePurchase({ userId, category, serviceID, variationCode, amount, phone, billersCode, recipientEmail }) {
   if (!category || !serviceID || !amount) {
     return { ok: false, error: 'category, serviceID and amount are required' };
   }
@@ -136,6 +136,7 @@ async function executePurchase({ userId, category, serviceID, variationCode, amo
     serviceID,
     variationCode,
     billersCode,
+    recipientEmail,
     amount,
     discountApplied: discountAmount,
     status: 'pending',
@@ -189,8 +190,17 @@ async function executePurchase({ userId, category, serviceID, variationCode, amo
  *  - the pending-transaction scheduler, which does this automatically so
  *    most people never have to check manually at all
  */
+const VTPASS_CATEGORIES = ['airtime', 'data', 'tv', 'electricity', 'waec'];
+
 async function requeryAndSettle(txn) {
   if (txn.status !== 'pending') {
+    return { ok: true, status: txn.status, changed: false };
+  }
+
+  // Wallet-funding, speedtest-bonus, referral-bonus and loyalty-redemption
+  // never go through VTpass in the first place - they settle via Paystack/
+  // NOWPayments webhooks or internal logic, so there's nothing to requery.
+  if (!VTPASS_CATEGORIES.includes(txn.category)) {
     return { ok: true, status: txn.status, changed: false };
   }
 

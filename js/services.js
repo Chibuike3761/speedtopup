@@ -69,10 +69,11 @@ const SERVICE_CONFIG = {
   waec: {
     title: 'WAEC Result Checker PIN',
     networks: [{ value: 'waec', label: 'WAEC Result Checker' }],
-    needsVariation: false,
+    needsVariation: true,
+    amountFromVariation: true, // real price comes from VTpass, nothing typed manually
+    needsEmail: true, // PIN + serial number get emailed here, not just to the account owner
     billersLabel: 'Phone Number (to receive PIN)',
-    billersIsPhone: true,
-    fixedAmount: null // fetched live if VTpass is configured; otherwise ask the user
+    billersIsPhone: true
   },
   water: { comingSoon: true, title: 'Water Bill', note: 'No national water-billing API exists in Nigeria yet - this will be enabled the moment one becomes available.' },
   neco: { comingSoon: true, title: 'NECO Result Checker PIN', note: 'No VTU aggregator currently offers NECO PIN vending (unlike WAEC). This tile is a placeholder for when one does.' }
@@ -81,9 +82,11 @@ const SERVICE_CONFIG = {
 // ---------- FUND WALLET (Paystack or Crypto) ----------
 let selectedFundProvider = 'paystack';
 let cryptoMinAmountCache = null; // { minAmountUsdt, minAmountNgn } once fetched, reused for the session
+let cryptoNgnPerUsd = null; // derived from the above once available - lets us show a live USD estimate
 
 function openFundModal() {
   document.getElementById('fund-amount').value = '';
+  document.getElementById('fund-usd-estimate').style.display = 'none';
   selectFundProvider('paystack');
   document.getElementById('fundModal').classList.add('active');
 }
@@ -113,6 +116,8 @@ function selectFundProvider(provider) {
   } else {
     minEl.style.display = 'none';
   }
+
+  updateUsdEstimate();
 }
 
 async function loadCryptoMinAmount(forceRefresh = false) {
@@ -135,7 +140,9 @@ async function loadCryptoMinAmount(forceRefresh = false) {
 
     if (res.ok && data.minAmountUsdt) {
       cryptoMinAmountCache = data;
+      if (data.minAmountNgn) cryptoNgnPerUsd = Number(data.minAmountNgn) / Number(data.minAmountUsdt);
       renderCryptoMinAmount(data);
+      updateUsdEstimate();
     } else {
       minEl.classList.add('is-error');
       minEl.textContent = data.error || 'Could not fetch the live minimum right now.';
@@ -156,6 +163,31 @@ function renderCryptoMinAmount(data) {
     ? `Minimum crypto deposit: ~${usdt} USDT (≈ ₦${ngn})`
     : `Minimum crypto deposit: ~${usdt} USDT`;
 }
+
+// Shows a live "≈ $X.XX" estimate under the Naira input while crypto is
+// selected, using the NGN/USD rate implied by NOWPayments' own min-amount
+// data. Nothing here changes what's actually charged - the wallet is still
+// funded in Naira - this is purely informational so the customer knows
+// roughly how much USD-equivalent value they're paying.
+function updateUsdEstimate() {
+  const estimateEl = document.getElementById('fund-usd-estimate');
+  if (!estimateEl) return;
+
+  const amount = Number(document.getElementById('fund-amount').value);
+  if (selectedFundProvider !== 'crypto' || !cryptoNgnPerUsd || !amount) {
+    estimateEl.style.display = 'none';
+    return;
+  }
+
+  const usd = amount / cryptoNgnPerUsd;
+  estimateEl.textContent = `≈ $${usd.toFixed(2)} USD`;
+  estimateEl.style.display = 'block';
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const fundAmountInput = document.getElementById('fund-amount');
+  if (fundAmountInput) fundAmountInput.addEventListener('input', updateUsdEstimate);
+});
 
 async function submitFundWallet(btn) {
   const amount = document.getElementById('fund-amount').value;
@@ -745,6 +777,13 @@ function openServiceModal(category) {
   verifyResult.className = 'verify-result';
   verifyBtn.style.display = cfg.needsVerify ? 'inline-block' : 'none';
 
+  // Email row: only shown for categories where the deliverable (e.g. a WAEC
+  // PIN) needs to be sent somewhere specific, which may not be the account
+  // owner's own inbox.
+  const emailWrap = document.getElementById('service-email-wrap');
+  document.getElementById('service-email').value = '';
+  emailWrap.style.display = cfg.needsEmail ? 'block' : 'none';
+
   updatePayButtonState();
   document.getElementById('serviceModal').classList.add('active');
 }
@@ -916,6 +955,8 @@ async function submitServicePurchase(btn) {
   if (cfg.needsVerify && !currentVerificationMatches()) {
     return alert(`Please verify the ${cfg.billersLabel.toLowerCase()} first so you can confirm the customer name before paying.`);
   }
+  const recipientEmail = document.getElementById('service-email').value.trim();
+  if (cfg.needsEmail && !recipientEmail) return alert('Please enter an email address to receive the PIN and serial number');
 
   const original = btn.textContent;
   btn.textContent = 'Processing...';
@@ -934,7 +975,8 @@ async function submitServicePurchase(btn) {
         variationCode: variationCode || undefined,
         amount: Number(amount),
         phone: cfg.billersIsPhone ? billersCode : document.getElementById('service-billers').value,
-        billersCode
+        billersCode,
+        recipientEmail: recipientEmail || undefined
       })
     });
     const data = await res.json();

@@ -177,6 +177,11 @@
     <input type="number" id="service-amount" placeholder="Amount (₦)" data-i18n-placeholder="amount.ngn" class="modal-input" min="1">
     <div id="service-amount-display" class="modal-amount-display" style="display:none;"></div>
 
+    <div id="service-email-wrap" style="display:none;">
+      <label style="font-size:0.85rem; color:var(--gray); display:block; margin-top:8px;">Email (to receive PIN &amp; Serial Number)</label>
+      <input type="email" id="service-email" placeholder="you@example.com" class="modal-input">
+    </div>
+
     <button id="service-pay-btn" onclick="submitServicePurchase(this)" class="btn btn-primary btn-block" style="margin-top:10px;" data-i18n="modal.payNow">Pay Now</button>
     <button onclick="closeServiceModal()" class="btn btn-secondary btn-block" style="margin-top:10px;" data-i18n="modal.cancel">Cancel</button>
   </div>
@@ -190,6 +195,7 @@
       Choose how you'd like to pay - Paystack (card / bank transfer) or crypto (USDT, BTC, BNB).
     </p>
     <input type="number" id="fund-amount" placeholder="Amount (₦)" data-i18n-placeholder="amount.ngn" class="modal-input" min="100">
+    <p class="fund-usd-estimate" id="fund-usd-estimate" style="display:none;"></p>
 
     <div class="fund-provider-row">
       <button type="button" id="fund-provider-paystack" class="fund-provider-btn active" onclick="selectFundProvider('paystack')">

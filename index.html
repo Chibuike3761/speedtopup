@@ -147,14 +147,17 @@
     <h3 data-i18n="modal.title">Buy Data</h3>
     <select id="modal-network" class="modal-input">
       <option value="" data-i18n="modal.selectNetwork">Select Network</option>
-      <option value="MTN">MTN SME</option>
-      <option value="AIRTEL">Airtel CG</option>
-      <option value="GLO">Glo</option>
-      <option value="9MOBILE">9mobile</option>
+      <option value="mtn-data">MTN</option>
+      <option value="airtel-data">Airtel</option>
+      <option value="glo-data">Glo</option>
+      <option value="etisalat-data">9mobile</option>
+    </select>
+    <select id="modal-variation" class="modal-input" disabled>
+      <option value="">Choose network first...</option>
     </select>
     <input type="tel" id="modal-phone" placeholder="Phone Number (08123456789)" data-i18n-placeholder="modal.phonePlaceholder" class="modal-input">
-    <input type="number" id="modal-amount" placeholder="Amount in GB" data-i18n-placeholder="modal.amountPlaceholder" class="modal-input" min="1">
-    <button onclick="submitBuyData(this)" class="btn btn-primary btn-block" style="margin-top:10px;" data-i18n="modal.buyNow">Buy Now</button>
+    <div id="modal-amount-display" class="modal-amount-display">Select a plan to see the price</div>
+    <button id="modal-pay-btn" onclick="submitBuyData(this)" class="btn btn-primary btn-block" style="margin-top:10px;" disabled data-i18n="modal.buyNow">Buy Now</button>
     <button onclick="closeBuyModal()" class="btn btn-secondary btn-block" style="margin-top:10px;" data-i18n="modal.cancel">Cancel</button>
   </div>
 </div>

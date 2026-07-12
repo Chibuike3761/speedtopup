@@ -52,6 +52,12 @@ async function notifyTransaction(user, txn, options = {}) {
     const { subject, html } = buildTransactionEmail(user, txn, options);
     if (!subject) return; // no template for this case - skip quietly
     await sendEmail({ to: user.email, subject, html });
+
+    // WAEC (and anything else that sets recipientEmail in future) also goes to
+    // whoever the PIN is actually for, which may not be the account owner.
+    if (txn.recipientEmail && txn.recipientEmail !== user.email) {
+      await sendEmail({ to: txn.recipientEmail, subject, html });
+    }
   } catch (err) {
     console.error('notifyTransaction failed:', err.message);
   }
@@ -125,11 +131,22 @@ function buildTransactionEmail(user, txn, options) {
     const pointsLine = options.pointsEarned > 0
       ? `<p style="color:#059669; font-size:0.9rem;">+${options.pointsEarned} loyalty points earned 🎉</p>`
       : '';
+
+    // WAEC's actual deliverable - the PIN/serial the customer needs to check
+    // their result - comes back from VTpass in purchased_code. Surface it
+    // prominently since it's the whole point of this email.
+    const pinCode = txn.providerResponse?.purchased_code || txn.providerResponse?.content?.purchased_code;
+    const pinBlock = (txn.category === 'waec' && pinCode)
+      ? `<p style="background:#0f172a; color:#00d4aa; border-radius:10px; padding:16px; font-size:1rem; font-weight:700; text-align:center; letter-spacing:0.5px;">${pinCode}</p>
+         <p style="font-size:0.85rem; color:#64748b;">Keep this safe - you'll need it to check your WAEC result online.</p>`
+      : '';
+
     return {
       subject: `${label} purchase successful - ${amount}`,
       html: emailWrapper(`Your ${label.toLowerCase()} purchase went through ✅`, `
         <p>Hi there,</p>
         <p>Your purchase of <strong>${amount}</strong> ${label.toLowerCase()}${txn.billersCode ? ` for ${txn.billersCode}` : ''} was successful.</p>
+        ${pinBlock}
         ${pointsLine}
         <p style="background:#f0fdf9; border-radius:10px; padding:14px; font-size:0.9rem;">
           Reference: <span style="font-family:monospace;">${txn.reference}</span>

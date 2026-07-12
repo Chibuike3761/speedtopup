@@ -326,12 +326,72 @@ window.closeBuyModal = function () {
   if (modal) modal.classList.remove('active');
 };
 
-window.submitBuyData = async function (buttonEl) {
-  const network = document.getElementById('modal-network').value;
-  const phone = document.getElementById('modal-phone').value.trim();
-  const amount = document.getElementById('modal-amount').value;
+// Plans are fetched live from the backend (which pulls them from VTpass) so
+// the price shown always matches what will actually be charged - nothing
+// here is manually typed or hardcoded.
+document.addEventListener('DOMContentLoaded', () => {
+  const networkSelect = document.getElementById('modal-network');
+  const variationSelect = document.getElementById('modal-variation');
+  if (!networkSelect || !variationSelect) return; // this page doesn't have the modal
 
-  if (!network || !phone || !amount) return alert('All fields are required');
+  networkSelect.addEventListener('change', async (e) => {
+    const serviceID = e.target.value;
+    const amountDisplay = document.getElementById('modal-amount-display');
+    const payBtn = document.getElementById('modal-pay-btn');
+    payBtn.disabled = true;
+    amountDisplay.textContent = 'Select a plan to see the price';
+
+    if (!serviceID) {
+      variationSelect.innerHTML = '<option value="">Choose network first...</option>';
+      variationSelect.disabled = true;
+      return;
+    }
+
+    variationSelect.disabled = true;
+    variationSelect.innerHTML = '<option>Loading plans...</option>';
+    try {
+      const res = await fetch(`${API_BASE}/services/variations/${serviceID}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      const data = await res.json();
+      const list = data?.content?.varations || data?.content?.variations || [];
+      if (!res.ok || !list.length) throw new Error('none');
+
+      variationSelect.innerHTML = '<option value="">Select a plan</option>' +
+        list.map(v => `<option value="${v.variation_code}" data-amount="${v.variation_amount}">${v.name} - ₦${v.variation_amount}</option>`).join('');
+      variationSelect.disabled = false;
+    } catch (err) {
+      variationSelect.innerHTML = '<option value="">Plans unavailable right now (VTpass not connected yet)</option>';
+    }
+  });
+
+  variationSelect.addEventListener('change', (e) => {
+    const selectedOption = e.target.selectedOptions[0];
+    const amount = selectedOption ? selectedOption.getAttribute('data-amount') : null;
+    const amountDisplay = document.getElementById('modal-amount-display');
+    const payBtn = document.getElementById('modal-pay-btn');
+
+    if (amount) {
+      amountDisplay.textContent = `Amount: ₦${Number(amount).toLocaleString()}`;
+      payBtn.disabled = false;
+    } else {
+      amountDisplay.textContent = 'Select a plan to see the price';
+      payBtn.disabled = true;
+    }
+  });
+});
+
+window.submitBuyData = async function (buttonEl) {
+  const serviceID = document.getElementById('modal-network').value;
+  const variationSelect = document.getElementById('modal-variation');
+  const variationCode = variationSelect.value;
+  const phone = document.getElementById('modal-phone').value.trim();
+  const selectedOption = variationSelect.selectedOptions[0];
+  const amount = selectedOption ? selectedOption.getAttribute('data-amount') : null;
+
+  if (!serviceID) return alert('Please select a network');
+  if (!variationCode || !amount) return alert('Please select a data plan');
+  if (!phone) return alert('Please enter a phone number');
 
   const btn = buttonEl || event.target;
   const original = btn.textContent;
@@ -339,13 +399,20 @@ window.submitBuyData = async function (buttonEl) {
   btn.disabled = true;
 
   try {
-    const res = await fetch(`${API_BASE}/vtu/buy-data`, {
+    const res = await fetch(`${API_BASE}/services/purchase`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${localStorage.getItem('token')}`
       },
-      body: JSON.stringify({ network, phone, amount })
+      body: JSON.stringify({
+        category: 'data',
+        serviceID,
+        variationCode,
+        amount: Number(amount),
+        phone,
+        billersCode: phone
+      })
     });
     const data = await res.json();
 

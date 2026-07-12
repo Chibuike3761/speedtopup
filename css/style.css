@@ -411,6 +411,13 @@ input[type="number"] {
   cursor: not-allowed;
 }
 
+.fund-usd-estimate {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--gray);
+  margin: -4px 0 8px;
+}
+
 .input-wrap { position: relative; }
 .input-wrap .toggle-eye {
   position: absolute;
