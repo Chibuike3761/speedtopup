@@ -100,9 +100,9 @@ async function handleIncomingMessage(from, text) {
 }
 
 async function sendNotRegistered(from) {
-  const site = process.env.CLIENT_ORIGIN || 'the NaijaFast website';
+  const site = process.env.CLIENT_ORIGIN || 'the Speed Topup website';
   await whatsapp.sendText(from,
-    `We couldn't find a NaijaFast account using this WhatsApp number. Please register at ${site} with this exact phone number, then message us again to order.`
+    `We couldn't find a Speed Topup account using this WhatsApp number. Please register at ${site} with this exact phone number, then message us again to order.`
   );
 }
 

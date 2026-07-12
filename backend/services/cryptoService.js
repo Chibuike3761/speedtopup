@@ -37,7 +37,7 @@ async function initializeInvoice({ amountNaira, reference, callbackUrl }) {
     price_amount: amountNaira,
     price_currency: 'ngn',
     order_id: reference,
-    order_description: 'NaijaFast wallet funding',
+    order_description: 'Speed Topup wallet funding',
     ipn_callback_url: callbackUrl,
     success_url: `${callbackUrl}?provider=crypto&reference=${encodeURIComponent(reference)}`,
     cancel_url: `${callbackUrl}?provider=crypto&reference=${encodeURIComponent(reference)}&cancelled=1`

@@ -1,8 +1,8 @@
-// ===== NaijaFast i18n: English / Naija Pidgin toggle =====
+// ===== Speed Topup i18n: English / Naija Pidgin toggle =====
 // Covers static UI chrome only (nav, headings, buttons, forms, footer).
 // Dynamic content (transaction lists, purchase results, alerts) stays in English.
 
-const NAIJAFAST_I18N = {
+const SPEEDTOPUP_I18N = {
   en: {
     "nav.home": "Home",
     "nav.services": "Services",
@@ -41,7 +41,7 @@ const NAIJAFAST_I18N = {
 
     "status.buy": "Buy Data Now",
 
-    "footer.copy": "\u00A9 2026 NaijaFast Data \u2014 Cheapest. Fastest. Smartest.",
+    "footer.copy": "\u00A9 2026 Speed Topup Data \u2014 Cheapest. Fastest. Smartest.",
     "footer.love": "Made with \u2764\uFE0F for Nigeria",
 
     "modal.title": "Buy Data",
@@ -126,7 +126,7 @@ const NAIJAFAST_I18N = {
 
     "amount.ngn": "Amount (₦)",
 
-    "login.title": "Login to NaijaFast",
+    "login.title": "Login to Speed Topup",
     "auth.emailPlaceholder": "Email Address",
     "auth.passwordPlaceholder": "Password",
     "login.btn": "Login",
@@ -192,7 +192,7 @@ const NAIJAFAST_I18N = {
 
     "status.buy": "Buy Data Now Now",
 
-    "footer.copy": "\u00A9 2026 NaijaFast Data \u2014 E Cheap. E Fast. E Smart.",
+    "footer.copy": "\u00A9 2026 Speed Topup Data \u2014 E Cheap. E Fast. E Smart.",
     "footer.love": "Make with \u2764\uFE0F for Naija",
 
     "modal.title": "Buy Data",
@@ -277,7 +277,7 @@ const NAIJAFAST_I18N = {
 
     "amount.ngn": "Amount (₦)",
 
-    "login.title": "Log In for NaijaFast",
+    "login.title": "Log In for Speed Topup",
     "auth.emailPlaceholder": "Email Address",
     "auth.passwordPlaceholder": "Password",
     "login.btn": "Log In",
@@ -307,10 +307,10 @@ const NAIJAFAST_I18N = {
   }
 };
 
-const NAIJAFAST_LANG_KEY = "naijafast_lang";
+const SPEEDTOPUP_LANG_KEY = "speedtopup_lang";
 
-function naijafastApplyLanguage(lang) {
-  const dict = NAIJAFAST_I18N[lang] || NAIJAFAST_I18N.en;
+function speedtopupApplyLanguage(lang) {
+  const dict = SPEEDTOPUP_I18N[lang] || SPEEDTOPUP_I18N.en;
 
   document.querySelectorAll("[data-i18n]").forEach((el) => {
     const key = el.getAttribute("data-i18n");
@@ -333,14 +333,14 @@ function naijafastApplyLanguage(lang) {
   }
 }
 
-function naijafastToggleLanguage() {
-  const current = localStorage.getItem(NAIJAFAST_LANG_KEY) || "en";
+function speedtopupToggleLanguage() {
+  const current = localStorage.getItem(SPEEDTOPUP_LANG_KEY) || "en";
   const next = current === "en" ? "pcm" : "en";
-  localStorage.setItem(NAIJAFAST_LANG_KEY, next);
-  naijafastApplyLanguage(next);
+  localStorage.setItem(SPEEDTOPUP_LANG_KEY, next);
+  speedtopupApplyLanguage(next);
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  const saved = localStorage.getItem(NAIJAFAST_LANG_KEY) || "en";
-  naijafastApplyLanguage(saved);
+  const saved = localStorage.getItem(SPEEDTOPUP_LANG_KEY) || "en";
+  speedtopupApplyLanguage(saved);
 });

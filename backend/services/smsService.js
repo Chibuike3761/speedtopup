@@ -17,8 +17,8 @@ async function sendOtpSms(phone, code) {
   try {
     const res = await axios.post('https://api.ng.termii.com/api/sms/send', {
       to: phone,
-      from: process.env.TERMII_SENDER_ID || 'NaijaFast',
-      sms: `Your NaijaFast Data verification code is ${code}. It expires in 10 minutes.`,
+      from: process.env.TERMII_SENDER_ID || 'Speed Topup',
+      sms: `Your Speed Topup Data verification code is ${code}. It expires in 10 minutes.`,
       type: 'plain',
       channel: 'dnd',
       api_key: apiKey

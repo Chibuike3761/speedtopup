@@ -1,7 +1,7 @@
 {
-  "name": "naijafast-backend",
+  "name": "speedtopup-backend",
   "version": "1.0.0",
-  "description": "NaijaFast Data - backend API (auth+OTP, wallet, VTU services)",
+  "description": "Speed Topup Data - backend API (auth+OTP, wallet, VTU services)",
   "main": "server.js",
   "type": "commonjs",
   "scripts": {

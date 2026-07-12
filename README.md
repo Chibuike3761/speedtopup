@@ -1,4 +1,4 @@
-# NaijaFast Data — Setup Guide
+# Speed Topup Data — Setup Guide
 
 ## What's real vs. what needs your accounts
 
@@ -31,7 +31,7 @@ cp .env.example .env
 > If you're updating an existing install rather than starting fresh, run `npm install` again after pulling new files — new features occasionally add new dependencies (e.g. `node-cron` for auto top-ups), and skipping this step is the #1 cause of "Cannot find module" errors.
 
 Edit `.env`:
-- `MONGO_URI` — from MongoDB Atlas (or `mongodb://127.0.0.1:27017/naijafast` if you run Mongo locally)
+- `MONGO_URI` — from MongoDB Atlas (or `mongodb://127.0.0.1:27017/speedtopup` if you run Mongo locally)
 - `JWT_SECRET` — any long random string
 - Leave `TERMII_API_KEY` and `VTPASS_*` blank at first to test everything in dev mode
 
@@ -39,7 +39,7 @@ Run it:
 ```bash
 npm run dev
 ```
-You should see `🚀 NaijaFast backend running on http://localhost:5000`.
+You should see `🚀 Speed Topup backend running on http://localhost:5000`.
 
 ## 2. Frontend setup
 

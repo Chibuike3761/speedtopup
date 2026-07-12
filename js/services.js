@@ -102,8 +102,8 @@ function selectFundProvider(provider) {
   document.getElementById('fund-provider-crypto').classList.toggle('active', provider === 'crypto');
 
   const hintEl = document.getElementById('fund-provider-hint');
-  const currentLang = localStorage.getItem('naijafast_lang') || 'en';
-  const dict = (typeof NAIJAFAST_I18N !== 'undefined' && NAIJAFAST_I18N[currentLang]) || {};
+  const currentLang = localStorage.getItem('speedtopup_lang') || 'en';
+  const dict = (typeof SPEEDTOPUP_I18N !== 'undefined' && SPEEDTOPUP_I18N[currentLang]) || {};
   hintEl.setAttribute('data-i18n', provider === 'crypto' ? 'fund.hint.crypto' : 'fund.hint.paystack');
   hintEl.textContent = provider === 'crypto'
     ? (dict['fund.hint.crypto'] || 'Pay with USDT, BTC, BNB or other coins via a secure crypto invoice.')
@@ -886,7 +886,7 @@ async function verifyBillersCode(btn) {
   if (currentCategory === 'electricity' && !variationCode) return alert('Please select Prepaid or Postpaid first');
 
   const original = btn.textContent;
-  btn.textContent = (typeof NAIJAFAST_I18N !== 'undefined' && NAIJAFAST_I18N[localStorage.getItem('naijafast_lang') || 'en']?.['modal.verifying']) || 'Verifying...';
+  btn.textContent = (typeof SPEEDTOPUP_I18N !== 'undefined' && SPEEDTOPUP_I18N[localStorage.getItem('speedtopup_lang') || 'en']?.['modal.verifying']) || 'Verifying...';
   btn.disabled = true;
   verifyResult.style.display = 'none';
 

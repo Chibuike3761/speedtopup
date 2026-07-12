@@ -18,8 +18,8 @@
 // separate, human-staffed line if you'd rather keep bot orders and support
 // conversations apart. International format, digits only, no + or spaces.
 const SUPPORT_WHATSAPP_NUMBER = '2348000000000'; // TODO: replace with your real WhatsApp number
-const SUPPORT_WHATSAPP_MESSAGE = 'Hi NaijaFast, I need help with my account.';
-const SUPPORT_EMAIL = 'support@naijafast.example'; // TODO: replace with your real support email
+const SUPPORT_WHATSAPP_MESSAGE = 'Hi Speed Topup, I need help with my account.';
+const SUPPORT_EMAIL = 'support@speedtopup.example'; // TODO: replace with your real support email
 
 (function renderSupportWidget() {
   if (document.getElementById('support-widget')) return; // guard against double-include

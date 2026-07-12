@@ -21,12 +21,12 @@ function emailWrapper(headline, bodyHtml) {
   return `
   <div style="font-family:Arial,Helvetica,sans-serif; max-width:480px; margin:0 auto; padding:24px 20px; color:#0f172a;">
     <div style="text-align:center; margin-bottom:20px;">
-      <span style="font-size:1.3rem; font-weight:800;">NaijaFast <span style="color:#00d4aa;">Data</span></span>
+      <span style="font-size:1.3rem; font-weight:800;">Speed Topup <span style="color:#00d4aa;">Data</span></span>
     </div>
     <h2 style="font-size:1.1rem; margin-bottom:12px;">${headline}</h2>
     ${bodyHtml}
     <p style="margin-top:28px; font-size:0.8rem; color:#64748b;">
-      This is an automated message from NaijaFast Data. If you didn't expect this, please contact support.
+      This is an automated message from Speed Topup Data. If you didn't expect this, please contact support.
     </p>
   </div>`;
 }
@@ -74,7 +74,7 @@ function buildTransactionEmail(user, txn, options) {
         subject: `Wallet funded: ${amount} added`,
         html: emailWrapper('Your wallet has been funded ✅', `
           <p>Hi there,</p>
-          <p><strong>${amount}</strong> was added to your NaijaFast wallet via <strong>${providerLabel}</strong>.</p>
+          <p><strong>${amount}</strong> was added to your Speed Topup wallet via <strong>${providerLabel}</strong>.</p>
           <p style="background:#f0fdf9; border-radius:10px; padding:14px; font-size:0.9rem;">
             Reference: <span style="font-family:monospace;">${txn.reference}</span>
           </p>
@@ -97,7 +97,7 @@ function buildTransactionEmail(user, txn, options) {
         subject: `Welcome bonus credited: ${amount}`,
         html: emailWrapper('You just earned a welcome bonus 🎁', `
           <p>Hi there,</p>
-          <p>Thanks for joining NaijaFast through a friend's invite! <strong>${amount}</strong> has been credited to your wallet.</p>
+          <p>Thanks for joining Speed Topup through a friend's invite! <strong>${amount}</strong> has been credited to your wallet.</p>
         `)
       };
     }
@@ -120,7 +120,7 @@ function buildTransactionEmail(user, txn, options) {
       html: emailWrapper('Your loyalty points just became cash 💵', `
         <p>Hi there,</p>
         <p><strong>${amount}</strong> has been added to your wallet from redeeming your loyalty points.</p>
-        <p>Keep buying airtime, data, TV, or electricity through NaijaFast to earn more points automatically.</p>
+        <p>Keep buying airtime, data, TV, or electricity through Speed Topup to earn more points automatically.</p>
       `)
     };
   }

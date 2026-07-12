@@ -4,7 +4,7 @@
 const API_BASE = '/api';
 
 document.addEventListener('DOMContentLoaded', function () {
-  console.log('✅ NaijaFast loaded');
+  console.log('✅ Speed Topup loaded');
 
   initMap();
   initPriceGrid();
@@ -276,7 +276,7 @@ window.performVerifyOtp = async function (phone) {
 
     if (res.ok && data.token) {
       localStorage.setItem('token', data.token);
-      alert('Phone verified! Welcome to NaijaFast.');
+      alert('Phone verified! Welcome to Speed Topup.');
       window.location.href = 'services.html';
     } else {
       alert(data.error || 'Verification failed');

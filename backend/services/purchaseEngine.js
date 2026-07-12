@@ -145,7 +145,7 @@ async function executePurchase({ userId, category, serviceID, variationCode, amo
 
   try {
     // The full nominal amount is still requested from VTpass - the service
-    // delivered is worth full value; the discount is what NaijaFast absorbs.
+    // delivered is worth full value; the discount is what Speed Topup absorbs.
     const result = await vtpass.purchase({ requestId: reference, serviceID, variationCode, amount, phone, billersCode });
     const { pointsEarned } = await settleFromProviderResponse({ user, txn, result, amountToCharge, discountAmount });
 

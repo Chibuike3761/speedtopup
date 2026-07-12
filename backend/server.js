@@ -64,7 +64,7 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5000;
 
 connectDB().then(() => {
-  app.listen(PORT, () => console.log(`🚀 NaijaFast backend running on http://localhost:${PORT}`));
+  app.listen(PORT, () => console.log(`🚀 Speed Topup backend running on http://localhost:${PORT}`));
   startAutoTopUpScheduler();
   startPendingTransactionScheduler();
 });

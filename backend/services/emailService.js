@@ -18,7 +18,7 @@ async function sendEmail({ to, subject, html }) {
     const res = await axios.post(
       'https://api.resend.com/emails',
       {
-        from: process.env.RESEND_FROM_EMAIL || 'NaijaFast Data <onboarding@resend.dev>',
+        from: process.env.RESEND_FROM_EMAIL || 'Speed Topup Data <onboarding@resend.dev>',
         to,
         subject,
         html
