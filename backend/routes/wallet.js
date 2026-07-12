@@ -30,9 +30,41 @@ router.get('/', requireAuth, async (req, res) => {
 });
 
 // ---------- TRANSACTION HISTORY ----------
+// Supports pagination (page/limit) and optional filters so the frontend can
+// show "10 at a time + See More" plus a filter bar, without ever having to
+// pull a user's entire history into the browser at once.
 router.get('/transactions', requireAuth, async (req, res) => {
-  const transactions = await Transaction.find({ user: req.userId }).sort({ createdAt: -1 }).limit(50);
-  res.json({ transactions });
+  const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+  const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 10));
+
+  const query = { user: req.userId };
+
+  if (req.query.category) query.category = req.query.category;
+  if (req.query.status) query.status = req.query.status;
+
+  if (req.query.dateFrom || req.query.dateTo) {
+    query.createdAt = {};
+    if (req.query.dateFrom) query.createdAt.$gte = new Date(req.query.dateFrom);
+    if (req.query.dateTo) {
+      // Treat dateTo as inclusive of the whole day, not just midnight.
+      const end = new Date(req.query.dateTo);
+      end.setHours(23, 59, 59, 999);
+      query.createdAt.$lte = end;
+    }
+  }
+
+  if (req.query.minAmount || req.query.maxAmount) {
+    query.amount = {};
+    if (req.query.minAmount) query.amount.$gte = Number(req.query.minAmount);
+    if (req.query.maxAmount) query.amount.$lte = Number(req.query.maxAmount);
+  }
+
+  const [transactions, total] = await Promise.all([
+    Transaction.find(query).sort({ createdAt: -1 }).skip((page - 1) * limit).limit(limit),
+    Transaction.countDocuments(query)
+  ]);
+
+  res.json({ transactions, total, page, limit, hasMore: page * limit < total });
 });
 
 /**

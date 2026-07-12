@@ -10,10 +10,16 @@ const { requeryAndSettle, forceRefundStuckTransaction, STUCK_TIMEOUT_HOURS } = r
  * force-refunded - money should never be silently stuck in limbo waiting
  * on a provider that may never answer.
  */
+// Only these categories are ever fulfilled through VTpass - wallet-funding,
+// speedtest-bonus, referral-bonus and loyalty-redemption settle through
+// Paystack/NOWPayments webhooks or internal logic, and were never registered
+// with VTpass, so requerying them would just fail with a confusing error.
+const VTPASS_CATEGORIES = ['airtime', 'data', 'tv', 'electricity', 'waec'];
+
 function startPendingTransactionScheduler() {
   cron.schedule('*/5 * * * *', async () => {
     try {
-      const pending = await Transaction.find({ status: 'pending' });
+      const pending = await Transaction.find({ status: 'pending', category: { $in: VTPASS_CATEGORIES } });
       if (pending.length === 0) return;
 
       console.log(`🔎 Requerying ${pending.length} pending transaction(s)...`);

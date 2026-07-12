@@ -139,9 +139,37 @@
 
   <section class="container" style="padding-bottom: 4rem;">
     <h2 style="margin-bottom:1rem;" data-i18n="svc.txhistory.title">Transaction History</h2>
+
+    <div class="tx-filter-bar">
+      <select id="tx-filter-category" class="modal-input tx-filter-input">
+        <option value="">All types</option>
+        <option value="airtime">Airtime</option>
+        <option value="data">Data</option>
+        <option value="tv">TV Subscription</option>
+        <option value="electricity">Electricity</option>
+        <option value="waec">WAEC PIN</option>
+        <option value="wallet-funding">Wallet Funding</option>
+        <option value="referral-bonus">Referral Bonus</option>
+        <option value="loyalty-redemption">Loyalty Redemption</option>
+      </select>
+      <select id="tx-filter-status" class="modal-input tx-filter-input">
+        <option value="">Any status</option>
+        <option value="success">Successful</option>
+        <option value="pending">Pending</option>
+        <option value="failed">Failed</option>
+      </select>
+      <input type="date" id="tx-filter-date-from" class="modal-input tx-filter-input" title="From date">
+      <input type="date" id="tx-filter-date-to" class="modal-input tx-filter-input" title="To date">
+      <input type="number" id="tx-filter-min-amount" placeholder="Min ₦" class="modal-input tx-filter-input" min="0">
+      <input type="number" id="tx-filter-max-amount" placeholder="Max ₦" class="modal-input tx-filter-input" min="0">
+      <button class="btn btn-primary tx-filter-btn" onclick="applyTransactionFilters()">Filter</button>
+      <button class="btn btn-secondary tx-filter-btn" onclick="resetTransactionFilters()">Reset</button>
+    </div>
+
     <div id="transaction-history" class="tx-list">
       <p style="color:var(--gray);">Loading...</p>
     </div>
+    <button id="tx-see-more-btn" class="btn btn-secondary btn-block" style="margin-top:1rem; display:none;" onclick="loadMoreTransactions()">See More</button>
   </section>
 </main>
 

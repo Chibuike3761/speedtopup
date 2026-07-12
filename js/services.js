@@ -550,48 +550,103 @@ const CATEGORY_LABELS = {
   'wallet-funding': 'Wallet Funding', 'speedtest-bonus': 'Speed Test Bonus'
 };
 
-async function loadTransactionHistory() {
+let txCurrentPage = 1;
+let txHasMore = false;
+const TX_PAGE_SIZE = 10;
+
+function getTransactionFilters() {
+  return {
+    category: document.getElementById('tx-filter-category')?.value || '',
+    status: document.getElementById('tx-filter-status')?.value || '',
+    dateFrom: document.getElementById('tx-filter-date-from')?.value || '',
+    dateTo: document.getElementById('tx-filter-date-to')?.value || '',
+    minAmount: document.getElementById('tx-filter-min-amount')?.value || '',
+    maxAmount: document.getElementById('tx-filter-max-amount')?.value || ''
+  };
+}
+
+function renderTransactionRows(transactions) {
+  return transactions.map(t => {
+    const label = CATEGORY_LABELS[t.category] || t.category;
+    const date = new Date(t.createdAt).toLocaleString('en-NG', { dateStyle: 'medium', timeStyle: 'short' });
+    const statusClass = t.status === 'success' ? 'tx-success' : t.status === 'failed' ? 'tx-failed' : 'tx-pending';
+    const amountLabel = t.category === 'speedtest-bonus' ? `${t.amount}MB` : `₦${t.amount}`;
+    return `
+      <div class="tx-row">
+        <div>
+          <strong>${label}</strong>
+          ${t.serviceID ? `<span class="tx-sub">${t.serviceID.toUpperCase()}</span>` : ''}
+          <div class="tx-date">${date}</div>
+        </div>
+        <div class="tx-right">
+          <div class="tx-amount">${amountLabel}</div>
+          <span class="tx-status ${statusClass}">${t.status}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// append=false: fresh load or a filter change, replaces everything shown.
+// append=true: "See More" was clicked, adds the next page onto what's there.
+async function loadTransactionHistory(append = false) {
   const container = document.getElementById('transaction-history');
+  const seeMoreBtn = document.getElementById('tx-see-more-btn');
   if (!container) return;
 
+  if (!append) {
+    txCurrentPage = 1;
+    container.innerHTML = `<p style="color:var(--gray);">Loading...</p>`;
+  }
+
   try {
-    const res = await fetch(`${API_BASE}/wallet/transactions`, {
+    const filters = getTransactionFilters();
+    const params = new URLSearchParams({ page: txCurrentPage, limit: TX_PAGE_SIZE });
+    Object.entries(filters).forEach(([key, value]) => { if (value) params.set(key, value); });
+
+    const res = await fetch(`${API_BASE}/wallet/transactions?${params.toString()}`, {
       headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
     });
     const data = await res.json();
 
     if (!res.ok) {
       container.innerHTML = `<p style="color:var(--gray);">${data.error || 'Could not load transaction history'}</p>`;
+      if (seeMoreBtn) seeMoreBtn.style.display = 'none';
       return;
     }
 
     if (!data.transactions || data.transactions.length === 0) {
-      container.innerHTML = `<p style="color:var(--gray);">No transactions yet — your purchases and speed test bonuses will show up here.</p>`;
+      if (!append) {
+        container.innerHTML = `<p style="color:var(--gray);">No transactions match these filters yet.</p>`;
+      }
+      if (seeMoreBtn) seeMoreBtn.style.display = 'none';
       return;
     }
 
-    container.innerHTML = data.transactions.map(t => {
-      const label = CATEGORY_LABELS[t.category] || t.category;
-      const date = new Date(t.createdAt).toLocaleString('en-NG', { dateStyle: 'medium', timeStyle: 'short' });
-      const statusClass = t.status === 'success' ? 'tx-success' : t.status === 'failed' ? 'tx-failed' : 'tx-pending';
-      const amountLabel = t.category === 'speedtest-bonus' ? `${t.amount}MB` : `₦${t.amount}`;
-      return `
-        <div class="tx-row">
-          <div>
-            <strong>${label}</strong>
-            ${t.serviceID ? `<span class="tx-sub">${t.serviceID.toUpperCase()}</span>` : ''}
-            <div class="tx-date">${date}</div>
-          </div>
-          <div class="tx-right">
-            <div class="tx-amount">${amountLabel}</div>
-            <span class="tx-status ${statusClass}">${t.status}</span>
-          </div>
-        </div>
-      `;
-    }).join('');
+    const rowsHtml = renderTransactionRows(data.transactions);
+    container.innerHTML = append ? container.innerHTML + rowsHtml : rowsHtml;
+
+    txHasMore = !!data.hasMore;
+    if (seeMoreBtn) seeMoreBtn.style.display = txHasMore ? 'block' : 'none';
   } catch (err) {
-    container.innerHTML = `<p style="color:var(--gray);">Could not reach the server to load your history.</p>`;
+    if (!append) container.innerHTML = `<p style="color:var(--gray);">Could not reach the server to load your history.</p>`;
   }
+}
+
+function loadMoreTransactions() {
+  if (!txHasMore) return;
+  txCurrentPage += 1;
+  loadTransactionHistory(true);
+}
+
+function applyTransactionFilters() {
+  loadTransactionHistory(false);
+}
+
+function resetTransactionFilters() {
+  ['tx-filter-category', 'tx-filter-status', 'tx-filter-date-from', 'tx-filter-date-to', 'tx-filter-min-amount', 'tx-filter-max-amount']
+    .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  loadTransactionHistory(false);
 }
 
 // ---------- LIVE PENDING TRANSACTION TRACKER ----------
