@@ -331,7 +331,226 @@ const BEN_NETWORKS = {
 };
 
 function populateBenNetworks() { fillNetworkSelect('ben-category', 'ben-network'); }
-function populateAtuNetworks() { fillNetworkSelect('atu-category', 'atu-network'); }
+
+// ---------- AUTO TOP-UP ----------
+// Reuses SERVICE_CONFIG (defined above for the main Buy/Pay modal) so this
+// modal behaves identically per category: Data/TV pull real plan prices with
+// no manual amount entry, TV/Electricity require a name-verify before saving,
+// and Airtime/Electricity keep a manual amount field.
+let atuVerifiedBillers = null;
+
+function openAutoTopUpModal() {
+  document.getElementById('atu-label').value = '';
+  document.getElementById('atu-category').value = '';
+  document.getElementById('atu-network').innerHTML = '<option value="">Select category first</option>';
+  document.getElementById('atu-variation-wrap').style.display = 'none';
+  document.getElementById('atu-billers-label').textContent = 'Phone / Meter / Smartcard number';
+  document.getElementById('atu-billers').value = '';
+  document.getElementById('atu-verify-btn').style.display = 'none';
+  document.getElementById('atu-verify-result').style.display = 'none';
+  document.getElementById('atu-amount').value = '';
+  document.getElementById('atu-amount').style.display = 'block';
+  document.getElementById('atu-amount-display').style.display = 'none';
+  atuVerifiedBillers = null;
+  updateAtuSubmitState();
+  document.getElementById('autoTopUpModal').classList.add('active');
+}
+function closeAutoTopUpModal() { document.getElementById('autoTopUpModal').classList.remove('active'); }
+
+function populateAtuNetworks() {
+  const category = document.getElementById('atu-category').value;
+  const cfg = SERVICE_CONFIG[category];
+  const networkSelect = document.getElementById('atu-network');
+  const variationWrap = document.getElementById('atu-variation-wrap');
+  const variationSelect = document.getElementById('atu-variation');
+  const billersLabel = document.getElementById('atu-billers-label');
+  const billersInput = document.getElementById('atu-billers');
+  const verifyBtn = document.getElementById('atu-verify-btn');
+  const verifyResult = document.getElementById('atu-verify-result');
+  const amountInput = document.getElementById('atu-amount');
+  const amountDisplay = document.getElementById('atu-amount-display');
+
+  atuVerifiedBillers = null;
+  verifyResult.style.display = 'none';
+  billersInput.value = '';
+  amountInput.value = '';
+
+  if (!cfg) {
+    networkSelect.innerHTML = '<option value="">Select category first</option>';
+    variationWrap.style.display = 'none';
+    verifyBtn.style.display = 'none';
+    amountInput.style.display = 'block';
+    amountDisplay.style.display = 'none';
+    updateAtuSubmitState();
+    return;
+  }
+
+  networkSelect.innerHTML = '<option value="">Select</option>' +
+    cfg.networks.map(n => `<option value="${n.value}">${n.label}</option>`).join('');
+  billersLabel.textContent = cfg.billersLabel;
+  billersInput.placeholder = cfg.billersLabel;
+  verifyBtn.style.display = cfg.needsVerify ? 'inline-block' : 'none';
+
+  if (cfg.needsVariation) {
+    variationWrap.style.display = 'block';
+    if (cfg.variationOptions) {
+      variationSelect.innerHTML = '<option value="">Select</option>' +
+        cfg.variationOptions.map(v => `<option value="${v.value}">${v.label}</option>`).join('');
+      variationSelect.disabled = false;
+    } else {
+      variationSelect.innerHTML = '<option value="">Choose network first...</option>';
+      variationSelect.disabled = true;
+    }
+  } else {
+    variationWrap.style.display = 'none';
+  }
+
+  if (cfg.amountFromVariation) {
+    amountInput.style.display = 'none';
+    amountDisplay.style.display = 'block';
+    amountDisplay.textContent = 'Select a plan to see the price';
+  } else {
+    amountInput.style.display = 'block';
+    amountDisplay.style.display = 'none';
+  }
+
+  updateAtuSubmitState();
+}
+
+function updateAtuSubmitState() {
+  const category = document.getElementById('atu-category').value;
+  const cfg = SERVICE_CONFIG[category];
+  const submitBtn = document.getElementById('atu-submit-btn');
+  submitBtn.disabled = !!(cfg && cfg.needsVerify && !atuVerificationMatches());
+}
+
+function atuVerificationMatches() {
+  if (!atuVerifiedBillers) return false;
+  const serviceID = document.getElementById('atu-network').value;
+  const billersCode = document.getElementById('atu-billers').value.trim();
+  const variationCode = document.getElementById('atu-variation').value;
+  return atuVerifiedBillers.serviceID === serviceID &&
+    atuVerifiedBillers.billersCode === billersCode &&
+    atuVerifiedBillers.variationCode === variationCode;
+}
+
+async function verifyAtuBillersCode(btn) {
+  const category = document.getElementById('atu-category').value;
+  const cfg = SERVICE_CONFIG[category];
+  const serviceID = document.getElementById('atu-network').value;
+  const billersCode = document.getElementById('atu-billers').value.trim();
+  const variationCode = document.getElementById('atu-variation').value;
+  const verifyResult = document.getElementById('atu-verify-result');
+
+  if (!serviceID) return alert('Please select a provider first');
+  if (!billersCode) return alert(`Please enter the ${cfg.billersLabel.toLowerCase()}`);
+  if (category === 'electricity' && !variationCode) return alert('Please select Prepaid or Postpaid first');
+
+  const original = btn.textContent;
+  btn.textContent = 'Verifying...';
+  btn.disabled = true;
+  verifyResult.style.display = 'none';
+
+  try {
+    const res = await fetch(`${API_BASE}/services/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
+      body: JSON.stringify({ serviceID, billersCode, type: category === 'electricity' ? variationCode : undefined })
+    });
+    const data = await res.json();
+    const name = data?.content?.Customer_Name || data?.content?.customerName || data?.content?.customer_name;
+
+    if (res.ok && name) {
+      atuVerifiedBillers = { serviceID, billersCode, variationCode, name };
+      verifyResult.className = 'verify-result verify-ok';
+      verifyResult.textContent = `✅ ${name}`;
+      verifyResult.style.display = 'block';
+    } else {
+      atuVerifiedBillers = null;
+      verifyResult.className = 'verify-result verify-fail';
+      verifyResult.textContent = `❌ ${data.error || data?.content?.error || 'Could not verify this number - please check it and try again.'}`;
+      verifyResult.style.display = 'block';
+    }
+  } catch (err) {
+    atuVerifiedBillers = null;
+    verifyResult.className = 'verify-result verify-fail';
+    verifyResult.textContent = '❌ Could not reach the server. Is the backend running?';
+    verifyResult.style.display = 'block';
+  } finally {
+    btn.textContent = original;
+    btn.disabled = false;
+    updateAtuSubmitState();
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const atuNetworkSelect = document.getElementById('atu-network');
+  const atuVariationSelect = document.getElementById('atu-variation');
+  if (!atuNetworkSelect || !atuVariationSelect) return; // this page doesn't have the modal
+
+  atuNetworkSelect.addEventListener('change', async (e) => {
+    atuVerifiedBillers = null;
+    document.getElementById('atu-verify-result').style.display = 'none';
+    updateAtuSubmitState();
+
+    const category = document.getElementById('atu-category').value;
+    const cfg = SERVICE_CONFIG[category];
+    if (cfg && cfg.amountFromVariation) {
+      document.getElementById('atu-amount-display').textContent = 'Select a plan to see the price';
+      document.getElementById('atu-amount').value = '';
+    }
+    if (!cfg || !cfg.needsVariation || cfg.variationOptions) return; // electricity uses fixed prepaid/postpaid
+
+    const serviceID = e.target.value;
+    if (!serviceID) return;
+
+    atuVariationSelect.disabled = true;
+    atuVariationSelect.innerHTML = '<option>Loading plans...</option>';
+    try {
+      const res = await fetch(`${API_BASE}/services/variations/${serviceID}`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      const data = await res.json();
+      const list = data?.content?.varations || data?.content?.variations || [];
+      if (!res.ok || !list.length) throw new Error('none');
+
+      atuVariationSelect.innerHTML = '<option value="">Select a plan</option>' +
+        list.map(v => `<option value="${v.variation_code}" data-amount="${v.variation_amount}">${v.name} - ₦${v.variation_amount}</option>`).join('');
+      atuVariationSelect.disabled = false;
+    } catch (err) {
+      atuVariationSelect.innerHTML = '<option value="">Plans unavailable right now (VTpass not connected yet)</option>';
+    }
+  });
+
+  atuVariationSelect.addEventListener('change', (e) => {
+    atuVerifiedBillers = null;
+    document.getElementById('atu-verify-result').style.display = 'none';
+    updateAtuSubmitState();
+
+    const category = document.getElementById('atu-category').value;
+    const cfg = SERVICE_CONFIG[category];
+    if (!cfg || !cfg.amountFromVariation) return;
+
+    const selectedOption = e.target.selectedOptions[0];
+    const amount = selectedOption ? selectedOption.getAttribute('data-amount') : null;
+    const amountDisplay = document.getElementById('atu-amount-display');
+    const amountInput = document.getElementById('atu-amount');
+
+    if (amount) {
+      amountInput.value = amount;
+      amountDisplay.textContent = `Amount: ₦${Number(amount).toLocaleString()}`;
+    } else {
+      amountInput.value = '';
+      amountDisplay.textContent = 'Select a plan to see the price';
+    }
+  });
+
+  document.getElementById('atu-billers').addEventListener('input', () => {
+    atuVerifiedBillers = null;
+    document.getElementById('atu-verify-result').style.display = 'none';
+    updateAtuSubmitState();
+  });
+});
 
 function fillNetworkSelect(categoryId, networkId) {
   const category = document.getElementById(categoryId).value;
@@ -432,19 +651,21 @@ async function deleteBeneficiary(id) {
   }
 }
 
-// ---------- AUTO TOP-UP ----------
-function openAutoTopUpModal() { document.getElementById('autoTopUpModal').classList.add('active'); }
-function closeAutoTopUpModal() { document.getElementById('autoTopUpModal').classList.remove('active'); }
-
 async function submitAutoTopUp(btn) {
   const label = document.getElementById('atu-label').value.trim();
   const category = document.getElementById('atu-category').value;
+  const cfg = SERVICE_CONFIG[category];
   const serviceID = document.getElementById('atu-network').value;
+  const variationCode = document.getElementById('atu-variation').value;
   const billersCode = document.getElementById('atu-billers').value.trim();
   const amount = document.getElementById('atu-amount').value;
   const frequencyDays = document.getElementById('atu-frequency').value;
 
   if (!label || !category || !serviceID || !billersCode || !amount) return alert('All fields are required');
+  if (cfg && cfg.needsVariation && !variationCode) return alert('Please select a plan/bouquet');
+  if (cfg && cfg.needsVerify && !atuVerificationMatches()) {
+    return alert(`Please verify the ${cfg.billersLabel.toLowerCase()} first so you can confirm the customer name before saving.`);
+  }
 
   const original = btn.textContent;
   btn.textContent = 'Creating...';
@@ -454,7 +675,7 @@ async function submitAutoTopUp(btn) {
     const res = await fetch(`${API_BASE}/autotopup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('token')}` },
-      body: JSON.stringify({ label, category, serviceID, billersCode, amount: Number(amount), frequencyDays: Number(frequencyDays) })
+      body: JSON.stringify({ label, category, serviceID, variationCode: variationCode || undefined, billersCode, amount: Number(amount), frequencyDays: Number(frequencyDays) })
     });
     const data = await res.json();
     if (res.ok) {

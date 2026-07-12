@@ -17,4 +17,15 @@ function generateReferralCode() {
   return crypto.randomBytes(5).toString('hex').toUpperCase().slice(0, 7); // e.g. "A3F9C1B"
 }
 
-module.exports = { generateToken, generateOtpCode, generateReference, generateReferralCode };
+// Password reset tokens: the raw token goes in the emailed link, only its
+// hash is ever saved to the database (same principle as never storing a
+// plaintext password).
+function generateSecureToken() {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+function hashToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+module.exports = { generateToken, generateOtpCode, generateReference, generateReferralCode, generateSecureToken, hashToken };

@@ -273,14 +273,27 @@
       <option value="electricity" data-i18n="cat.electricity">Electricity</option>
     </select>
     <select id="atu-network" class="modal-input"><option value="" data-i18n="ben.selectCategoryFirst">Select category first</option></select>
-    <input type="text" id="atu-billers" placeholder="Phone / Meter / Smartcard number" data-i18n-placeholder="ben.billersPlaceholder" class="modal-input">
+
+    <div id="atu-variation-wrap" style="display:none;">
+      <select id="atu-variation" class="modal-input" disabled><option value="">Choose network first...</option></select>
+    </div>
+
+    <label id="atu-billers-label" style="font-size:0.85rem; color:var(--gray); display:block; margin-top:8px;">Phone / Meter / Smartcard number</label>
+    <div class="verify-row">
+      <input type="text" id="atu-billers" placeholder="Phone / Meter / Smartcard number" data-i18n-placeholder="ben.billersPlaceholder" class="modal-input">
+      <button type="button" id="atu-verify-btn" class="verify-btn" style="display:none;" onclick="verifyAtuBillersCode(this)">Verify</button>
+    </div>
+    <div id="atu-verify-result" class="verify-result" style="display:none;"></div>
+
     <input type="number" id="atu-amount" placeholder="Amount (₦)" data-i18n-placeholder="amount.ngn" class="modal-input" min="1">
+    <div id="atu-amount-display" class="modal-amount-display" style="display:none;"></div>
+
     <select id="atu-frequency" class="modal-input">
       <option value="1" data-i18n="atu.freq.daily">Daily</option>
       <option value="7" selected data-i18n="atu.freq.weekly">Weekly</option>
       <option value="30" data-i18n="atu.freq.monthly">Monthly</option>
     </select>
-    <button onclick="submitAutoTopUp(this)" class="btn btn-primary btn-block" style="margin-top:10px;" data-i18n="atu.createSchedule">Create Schedule</button>
+    <button id="atu-submit-btn" onclick="submitAutoTopUp(this)" class="btn btn-primary btn-block" style="margin-top:10px;" data-i18n="atu.createSchedule">Create Schedule</button>
     <button onclick="closeAutoTopUpModal()" class="btn btn-secondary btn-block" style="margin-top:10px;" data-i18n="modal.cancel">Cancel</button>
   </div>
 </div>
